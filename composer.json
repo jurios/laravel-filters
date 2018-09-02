@@ -1,0 +1,27 @@
+{
+  "name": "jurios/laravel-filters",
+  "description": "Laravel filtering system",
+  "keywords": ["laravel", "query", "filters"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jordi",
+      "email": "jordi@kodilab.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.0",
+  },
+  "autoload": {
+    "psr-4": {
+      "Kodilab\\Filters\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Kodilab\\Filters\\ServiceProvider"
+      ]
+    }
+  }
+}
