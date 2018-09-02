@@ -20,7 +20,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Kodilab\\Filters\\ServiceProvider"
+        "Kodilab\\Filters\\QueryFilterProvider"
       ]
     }
   }
