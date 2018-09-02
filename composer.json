@@ -1,5 +1,5 @@
 {
-  "name": "jurios/laravel-filters",
+  "name": "kodilab/laravel-filters",
   "description": "Laravel filtering system",
   "keywords": ["laravel", "query", "filters"],
   "license": "MIT",
@@ -11,16 +11,20 @@
   ],
   "require": {
     "php": ">=7.0",
+    "illuminate/support": "5.5.*|5.6.*|5.7.*",
+    "illuminate/database": "5.5.*|5.6.*|5.7.*",
+    "illuminate/http": "5.5.*|5.6.*|5.7.*",
+    "illuminate/pagination": "5.5.*|5.6.*|5.7.*"
   },
   "autoload": {
     "psr-4": {
-      "Kodilab\\Filters\\": "src/"
+      "Kodilab\\LaravelFilters\\": "src/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Kodilab\\Filters\\QueryFilterProvider"
+        "Kodilab\\LaravelFilters\\QueryFilterProvider"
       ]
     }
   }

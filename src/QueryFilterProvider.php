@@ -1,6 +1,6 @@
 <?php
 
-namespace Kodilab\Providers;
+namespace Kodilab\LaravelFilters;
 
 use Illuminate\Support\ServiceProvider;
 
