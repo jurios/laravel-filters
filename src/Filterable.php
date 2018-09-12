@@ -27,7 +27,7 @@ trait Filterable
      * @param QueryFilter $filters
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Pagination\LengthAwarePaginator|null
      */
-    public function scopeGetFiltersResults(Builder $query, QueryFilter $filters)
+    public function scopeFiltersResults(Builder $query, QueryFilter $filters)
     {
         return $filters->results($query);
     }
