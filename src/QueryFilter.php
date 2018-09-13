@@ -220,11 +220,11 @@ class QueryFilter
      *
      * @return \Illuminate\Support\HtmlString|null
      */
-    public function links()
+    public function links($view = null, $data = [])
     {
         if ($this->is_filtered && $this->isPaginated())
         {
-            return $this->getCollection()->appends($this->parametersApplied())->links();
+            return $this->getCollection()->appends($this->parametersApplied())->links($view, $data);
         }
 
         return null;
