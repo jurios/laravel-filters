@@ -72,9 +72,7 @@ class QueryFilter
      *
      * @var array
      */
-    protected $ignore = [
-        'paginate'
-    ];
+    protected $ignore = [];
 
     protected $debugBar;
 
@@ -125,6 +123,26 @@ class QueryFilter
     public function request()
     {
         return $this->request;
+    }
+
+    // Setters
+
+    /**
+     * Merge an array of ignores to the ignore list
+     *
+     * @param array $ignores
+     */
+    public function ignore(array $ignores)
+    {
+        foreach ($ignores as $ignore)
+        {
+            $ignore = $this->clearPrefix($ignore);
+
+            if (!$this->shouldBeIgnored($ignore))
+            {
+                $this->ignore[] = $ignore;
+            }
+        }
     }
 
     // Status
@@ -390,6 +408,13 @@ class QueryFilter
 
     }
 
+    /**
+     * Show debug filter message in LaravelDebugbar
+     * @param $filter
+     * @param $operator
+     * @param $value
+     * @param bool $applied
+     */
     private function debugFilter($filter, $operator, $value, $applied = true)
     {
         if (!is_null($this->debugBar))
@@ -405,6 +430,12 @@ class QueryFilter
         }
     }
 
+    /**
+     * Returns whether a filter should be ignored
+     *
+     * @param $filter
+     * @return bool
+     */
     private function shouldBeIgnored($filter)
     {
         $filter = $this->clearPrefix($filter);

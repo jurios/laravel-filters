@@ -186,6 +186,29 @@ When doesn't exists a specific function for a filter in the URL, then `QueryFilt
 ```
 If it isn't, it will ignored.
 
+##### Ignore a filter
+Sometimes for some reason you want **laravel-filters** ignore a filter. You can do it dynamically adding the filter name 
+(the filter name without prefix) to the ignore list:
+
+```php
+public function index(QueryFilter $request)
+{
+    $request->ignore(['age', 'name']);
+    
+    $events = Event::where('age', > , 18)->filtersResults($request); //Pagination applied
+    
+}
+```
+
+If you are extending the **laravel-filters**'s `QueryFilter` class, you can define your ignore list statically:
+```
+class EventFilter extends QueryFilter
+{
+    protected $ignore = ['age', 'name'];
+    ...
+}
+```
+
 ### Ok, but I want to create my own filters
 You can create your own class extending the `QueryFilter` class. Then you can create your own filters and
 overwrite the default ones, if you desire. In fact, is recommended creating a `QueryFilter` for every model that 
