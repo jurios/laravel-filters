@@ -380,7 +380,9 @@ class QueryFilter
             return $default;
         }
 
-        return $this->operatorStringToSQLOperator($operator_string);
+        $operator = $this->operatorStringToSQLOperator($operator_string);
+
+        return is_null($operator) ? $default : $operator;
     }
 
     /**
@@ -404,8 +406,9 @@ class QueryFilter
                 return '<';
             case 'lte':
                 return '<=';
+            default:
+                return null;
         }
-
     }
 
     /**

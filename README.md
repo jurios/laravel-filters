@@ -17,12 +17,12 @@ Some of the features of this package are these:
 // This will apply filters called var1 with value a and var2 with value b
 ```
 
-* If desired, automatically filter model's attribute agnostically.
+* If desired, automatically filter model's attributes agnostically.
 ```
 /this/is/the/url?qf-var1=a&qf-var2=b
 
-// This will look for entities whose attribute var1 == a y var2 == b
-// If var1 doesn't exists, it ignores this filter
+// If desired, this will look for the models whose attribute var1 == a y var2 == b
+// If var1 doesn't exists, it ignores this filter thus you don't need to check before apply
 ```
 
 * You can specific the comparision that it will be executed
@@ -133,12 +133,12 @@ Generally, a filter called in the URL is translated to a statement in the `Query
 more complex filters that do more stuff than that. We'll see how to create or own custom filters later.
 
 If you take a look to `QueryFilter` class which is the base class of the **laravel-filters** you will notice that a filter
-is just a function that does things to the `Query Builder`. So, for example, the filter `qf-order_desc` will call
+is just a function that add statements to the `Query Builder`. So, for example, the filter `qf-order_desc` will call
 the function `order_desc($value)` being `$value` the value in the URL.
 
 As you can see, to identify the filters in the URL and ignoring the variable which aren't, we use a prefix `qf-` which can
 be configured in the configuration file. This prefix is `destroyed` before apply the filter so `order_desc` is the 
-filter's name and will call the function `order_desc($value)` but is called in the URL by `qf-order_desc`
+filter's name and will call the function `order_desc($value)` but is called in the URL by `qf-order_desc`.
 
 By default, there are some filters that they will applied automatically:
 
@@ -209,11 +209,50 @@ class EventFilter extends QueryFilter
 }
 ```
 
+##### Using operators
+Sometimes your filters need an operator which specifics how the filter behaviours. Look the next url:
+```
+/this/is/the/url?....&qf-slots=10
+```
+In this case, this filter will add the next statement to the query:
+```
+->where('slots', 10)
+```
+
+But you can change the `where` statement adding an operator to the filter:
+```
+/this/is/the/url?....&qf-slots=10&sq-slots-op=lte
+
+```
+```
+->where('slots', '<=', 10)
+```
+
+As you can see, a filter's operator has the same prefix and name of the filter. Just we need to add a `-op` at the end.
+The operators can be:
+* `eq` : Equivalent (`where('slots, '=', 10)`)
+* `neq` : Not equivalent (`where('slots, '<>', 10)`)
+* `lt` : Lower than (`where('slots, '<', 10)`)
+* `lte` : Lower than equivalent (`where('slots, '<=', 10)`)
+* `gt` : Greater than (`where('slots, '>', 10)`)
+* `gte` : Greater than equivalent (`where('slots, '>=', 10)`)
+ 
+
 ### Ok, but I want to create my own filters
 You can create your own class extending the `QueryFilter` class. Then you can create your own filters and
 overwrite the default ones, if you desire. In fact, is recommended creating a `QueryFilter` for every model that 
 is `Filterable` in order to having distinct behaviours for the same filter in different models or 
 creating model-specific filters.
+
+If you want to get the filter's operator in SQL format ('=', '<>', '>', '>=', '<', '<='), then you can call this 
+method in your filter's method:
+```php
+public function new_filter($value)
+{
+    $operator = $this->getOperatorFilter('new_filter', '='); // Returns the operator if exists. 
+                                                            //If not, '=' is returned.
+}
+```
 
 ### Pagination
 **laravel-filters** considers pagination as a filter too as we can see above. However, pagination has some things to
