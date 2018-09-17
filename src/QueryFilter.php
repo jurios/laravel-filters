@@ -354,6 +354,17 @@ class QueryFilter
     }
 
     /**
+     * Add the prefix to a filter name
+     *
+     * @param string $filter
+     * @return string
+     */
+    public function addPrefix(string $filter)
+    {
+        return $this->prefix . '-' . $filter;
+    }
+
+    /**
      * Check if the filter is an operator (start with the prefix and finish with -op)
      * @param string $filter
      * @return false|int
