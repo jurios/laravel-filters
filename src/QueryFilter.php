@@ -179,8 +179,6 @@ class QueryFilter
 
         foreach ($this->filters() as $filter => $value)
         {
-            $this->parameters[$filter] = $value;
-
             if ($this->hasPrefix($filter) && !$this->isOperator($filter) && !$this->shouldBeIgnored($filter))
             {
                 $filter = $this->clearPrefix($filter);
@@ -207,9 +205,11 @@ class QueryFilter
      */
     public function results(Builder $query)
     {
-        if($this->is_filtered === false)
+        $this->query = $query;
+
+        foreach ($this->filters() as $filter => $value)
         {
-            $this->apply($query);
+            $this->parameters[$filter] = $value;
         }
 
         return $this->getCollection();
@@ -303,9 +303,16 @@ class QueryFilter
 
             if (\Illuminate\Support\Facades\Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
 
-                $operator = $this->getOperatorFilter($attribute, '=');
-
-                $this->query->where($attribute, $operator, $value );
+                if (array_key_exists($attribute, $instantiated_class->getCasts()) &&
+                    $instantiated_class->getCasts()[$attribute] !== 'string')
+                {
+                    $operator = $this->getOperatorFilter($attribute, '=');
+                    $this->query->where($attribute, $operator, $value );
+                }
+                else {
+                    $operator = $this->getOperatorFilter($attribute, 'LIKE');
+                    $this->query->where($attribute, $operator, '%' . $value . '%');
+                }
             }
         }
 
@@ -319,7 +326,7 @@ class QueryFilter
      */
     private function getCollection()
     {
-        if ($this->is_filtered && is_null($this->collection))
+        if (is_null($this->collection))
         {
             if ($this->isPaginated())
             {
