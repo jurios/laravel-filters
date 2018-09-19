@@ -222,7 +222,7 @@ class QueryFilter
      */
     public function links($view = null, $data = [])
     {
-        if ($this->is_filtered && $this->isPaginated())
+        if ($this->isPaginated())
         {
             return $this->getCollection()->appends($this->parametersApplied())->links($view, $data);
         }
