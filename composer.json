@@ -1,6 +1,7 @@
 {
   "name": "kodilab/laravel-filters",
   "description": "Laravel filtering system",
+  "version": "1.0.0",
   "keywords": ["laravel", "query", "filters"],
   "license": "MIT",
   "authors": [
