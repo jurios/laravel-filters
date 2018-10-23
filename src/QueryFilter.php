@@ -156,6 +156,11 @@ class QueryFilter
         return $this->paginate > 0;
     }
 
+    public function getPagination()
+    {
+        return $this->paginate;
+    }
+
     /**
      * Returns true if filters has been applied (apply() function has been called for this instance)
      * @return mixed
@@ -163,6 +168,31 @@ class QueryFilter
     public function isFiltered()
     {
         return $this->is_filtered;
+    }
+
+    public function isFilterApplied(string $filter)
+    {
+        if ($this->hasPrefix($filter))
+        {
+            $filter = $this->clearPrefix($filter);
+        }
+
+        if ($this->shouldBeIgnored($filter))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getAppliedFilterValue(string $filter)
+    {
+        if ($this->shouldBeIgnored($filter))
+        {
+            return null;
+        }
+
+        return $this->request->input($filter);
     }
 
     /**
@@ -183,6 +213,7 @@ class QueryFilter
             {
                 $filter = $this->clearPrefix($filter);
                 $operator = $this->getOperatorFilter($filter);
+
 
                 $this->debugFilter($filter, $operator, $value);
 
@@ -438,6 +469,11 @@ class QueryFilter
      */
     private function debugFilter($filter, $operator, $value, $applied = true)
     {
+        if (is_array($value))
+        {
+            $value = 'array()';
+        }
+
         if (!is_null($this->debugBar))
         {
             if ($applied)
