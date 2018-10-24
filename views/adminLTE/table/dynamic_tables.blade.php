@@ -38,7 +38,9 @@
             if (data === null) {
                 window.location.replace(url);
             } else {
-                window.location.replace(url + '?' + data);
+                const separator = window.location.href.includes('?') ? '&' : '?';
+
+                window.location.replace(url + separator + data);
             }
         }
 

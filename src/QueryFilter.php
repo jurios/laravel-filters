@@ -200,8 +200,6 @@ class QueryFilter
      */
     public function apply(Builder $query, Model $context = null)
     {
-        $this->is_filtered = true;
-
         $this->context = $context;
 
         $this->class_name = get_class($query->getModel());
@@ -211,6 +209,7 @@ class QueryFilter
         {
             if ($this->hasPrefix($filter) && !$this->isOperator($filter) && !$this->shouldBeIgnored($filter))
             {
+                $this->is_filtered = true;
                 $filter = $this->clearPrefix($filter);
                 $operator = $this->getOperatorFilter($filter);
 
