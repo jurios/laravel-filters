@@ -38,7 +38,7 @@
             if (data === null) {
                 window.location.replace(url);
             } else {
-                const separator = window.location.href.includes('?') ? '&' : '?';
+                const separator = url.includes('?') ? '&' : '?';
 
                 window.location.replace(url + separator + data);
             }
