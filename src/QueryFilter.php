@@ -76,6 +76,8 @@ class QueryFilter
 
     protected $debugBar;
 
+    protected $context;
+
     /**
      * QueryFilter constructor.
      * @param Request $request
@@ -89,6 +91,7 @@ class QueryFilter
         $this->collection = null;
         $this->is_filtered = false;
         $this->prefix = $config->get('filters.prefix');
+        $this->context = null;
 
         if (class_exists(\Barryvdh\Debugbar\LaravelDebugbar::class))
         {
@@ -195,9 +198,11 @@ class QueryFilter
      * @param Builder $query
      * @return Builder
      */
-    public function apply(Builder $query)
+    public function apply(Builder $query, Model $context = null)
     {
         $this->is_filtered = true;
+
+        $this->context = $context;
 
         $this->class_name = get_class($query->getModel());
         $this->query = $query;

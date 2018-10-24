@@ -3,6 +3,7 @@
 namespace Kodilab\LaravelFilters;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 trait Filterable
 {
@@ -14,9 +15,9 @@ trait Filterable
      * @param bool $return_collection
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder|Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Pagination\LengthAwarePaginator|null
      */
-    public function scopeFilters(Builder $query, QueryFilter $filters)
+    public function scopeFilters(Builder $query, QueryFilter $filters, Model $context = null)
     {
-        return $filters->apply($query);
+        return $filters->apply($query, $context);
     }
 
     /**

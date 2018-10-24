@@ -43,10 +43,10 @@
         }
 
         function loadTableSortingModule(id) {
-            @if(isset($filters) && ($filters->isFilterApplied(config('filters.prefix') . '-orderByDesc') || $filters->isFilterApplied(config('filters.prefix') . '-orderByAsc')))
+            @if(isset($filters) && ($filters->isFilterApplied(config('filters.prefix') . '-order_desc') || $filters->isFilterApplied(config('filters.prefix') . '-order_asc')))
 
-                const order_by_field = "{{ $filters->getAppliedFilterValue(config('filters.prefix') . '-orderByDesc') ? $filters->getAppliedFilterValue(config('filters.prefix') . '-orderByDesc') : $filters->getAppliedFilterValue(config('filters.prefix') . '-orderByAsc') }}";
-                const order_by_direction = "{{ $filters->getAppliedFilterValue(config('filters.prefix') . '-orderByDesc') ? 'desc' : 'asc' }}";
+                const order_by_field = "{{ $filters->getAppliedFilterValue(config('filters.prefix') . '-order_desc') ? $filters->getAppliedFilterValue(config('filters.prefix') . '-order_desc') : $filters->getAppliedFilterValue(config('filters.prefix') . '-order_asc') }}";
+                const order_by_direction = "{{ $filters->getAppliedFilterValue(config('filters.prefix') . '-order_desc') ? 'desc' : 'asc' }}";
 
                 if (order_by_field !== '') {
 
@@ -73,15 +73,15 @@
                 const orderBy = $(this).data('reference');
 
                 if($(this).hasClass('ascending') || (!$(this).hasClass('ascending') && !$(this).hasClass('descending'))) {
-                    param = 'orderByDesc';
-                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-orderByAsc', null);
-                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-orderByDesc', null);
-                    url = updateURLParameter(url, 'UPDATE', '{{config('filters.prefix')}}-orderByDesc', orderBy);
+                    param = 'order_desc';
+                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-order_asc', null);
+                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-order_desc', null);
+                    url = updateURLParameter(url, 'UPDATE', '{{config('filters.prefix')}}-order_desc', orderBy);
                 } else {
-                    param = 'orderByAsc';
-                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-orderByAsc', null);
-                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-orderByDesc', null);
-                    url = updateURLParameter(url, 'UPDATE', '{{config('filters.prefix')}}-orderByAsc', orderBy);
+                    param = 'order_asc';
+                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-order_asc', null);
+                    url = updateURLParameter(url, 'DELETE', '{{config('filters.prefix')}}-order_desc', null);
+                    url = updateURLParameter(url, 'UPDATE', '{{config('filters.prefix')}}-order_asc', orderBy);
                 }
 
                 redirectToURL(id, url);
