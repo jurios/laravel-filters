@@ -172,17 +172,12 @@ class QueryFilter
 
     public function isFilterApplied(string $filter)
     {
-        if ($this->hasPrefix($filter))
-        {
-            $filter = $this->clearPrefix($filter);
-        }
-
         if ($this->shouldBeIgnored($filter))
         {
             return false;
         }
 
-        return true;
+        return $this->request->filled($filter);
     }
 
     public function getAppliedFilterValue(string $filter)

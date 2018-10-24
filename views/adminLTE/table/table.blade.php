@@ -7,8 +7,8 @@
     @php($has_filters = false)
 @endif
 
-@if(!isset($applyFiltersLabelText))
-    @php($applyFiltersLabelText = 'Apply filters')
+@if(!isset($apply_filters))
+    @php($apply_filters = 'Apply filters')
 @endif
 
 <div id={{$id}} class="table-container">
@@ -21,7 +21,7 @@
                 <div class="box-header with-border">
                     <h4 class="box-title">
                         <a data-toggle="collapse" data-parent="#accordion-filters" href="#filters" aria-expanded="false" class="collapsed">
-                            {{ $applyFiltersLabelText }}
+                            {{ $apply_filters }}
                         </a>
                     </h4>
                 </div>
@@ -36,7 +36,7 @@
                                 <div class="row">
                                     <div class="col-md-4 col-md-offset-4">
                                         <button type="submit" class="btn btn-success btn-block m-l-10 center">
-                                            {{ $applyFiltersLabelText }}
+                                            {{ $apply_filters }}
                                         </button>
                                     </div>
                                 </div>
