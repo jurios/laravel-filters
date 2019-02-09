@@ -9,26 +9,24 @@ trait Filterable
 {
     /**
      * Apply filters $filters and return a Builder $query.
-     *
      * @param Builder $query
      * @param QueryFilter $filters
-     * @param bool $return_collection
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder|Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Pagination\LengthAwarePaginator|null
+     * @return Builder
      */
-    public function scopeFilters(Builder $query, QueryFilter $filters, Model $context = null)
+    public function scopeFilters(Builder $query, QueryFilter $filters)
     {
-        return $filters->apply($query, $context);
+        return $filters->apply($query);
     }
 
     /**
-     * It returns the result collection or LengthAwarePaginator when it's paginated of the query.
-     * Be careful, it you didn't call filters($filters) scope before, it will return the results without filtering
+     * Returns the collection after filtering the results. If filters() scope has been called previously, then it doesn't
+     * filter again.
      *
      * @param Builder $query
      * @param QueryFilter $filters
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Pagination\LengthAwarePaginator|null
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder[]|\Illuminate\Database\Eloquent\Collection
      */
-    public function scopeResults(Builder $query, QueryFilter $filters)
+    public function scopeGetFiltered(Builder $query, QueryFilter $filters)
     {
         return $filters->results($query);
     }

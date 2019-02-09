@@ -3,12 +3,9 @@
 namespace Kodilab\LaravelFilters;
 
 
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Schema;
 
 class QueryFilter
@@ -21,206 +18,78 @@ class QueryFilter
     protected $request;
 
     /**
-     * The request parameters being applied in order to be used later
-     *
-     * @var array $parameters
-     */
-    protected $parameters;
-
-    /**
-     * The query being generated
-     *
-     * @var Builder $query
-     */
-    protected $query;
-
-    /**
-     * The model being filtered
-     *
-     * @var string $class_name
-     */
-    protected $class_name;
-
-    /**
-     * Returns whether paginate filter is applied
-     *
-     * @var bool $paginate
-     */
-    protected $paginate;
-
-    /**
-     * The collection result after apply filters
-     *
-     * @var Collection|LengthAwarePaginator
-     */
-    protected $collection;
-
-    /**
-     * Returns whether this instance has been applied
-     * @var bool
-     */
-    protected $is_filtered;
-
-    /**
-     * The prefix used
-     * @var string
+     * Prefix used for get the filters from the request
+     * @var string $prefix
      */
     protected $prefix;
 
     /**
-     * The attributes that should be ignored.
-     *
-     * @var array
+     * Array of filters (without prefix) which are going to be applied
+     * @var array $filters
      */
-    protected $ignore = [];
+    protected $filters;
 
-    protected $debugBar;
+    /**
+     * Model which are being filtered
+     *
+     * @var Model
+     */
+    protected $model;
 
-    protected $context;
+    /**
+     * @var Builder
+     */
+    protected $query;
+
+    /**
+     * Returns whether the filters has been applied
+     *
+     * @var bool $is_filtered
+     */
+    protected $is_filtered;
 
     /**
      * QueryFilter constructor.
-     * @param Request $request
-     */
-    public function __construct(Request $request, Repository $config)
-    {
-        $this->request = $request;
-        $this->parameters = [];
-        $this->class_name = null;
-        $this->paginate = 10;
-        $this->collection = null;
-        $this->is_filtered = false;
-        $this->prefix = $config->get('filters.prefix');
-        $this->context = null;
-
-        if (class_exists(\Barryvdh\Debugbar\LaravelDebugbar::class))
-        {
-            $this->debugBar = app(\Barryvdh\Debugbar\LaravelDebugbar::class);
-        }
-    }
-
-    // Getters
-
-    /**
-     * Return the parameters applied. This is usefull specially to generate the links()
-     * @return array
-     */
-    public function parametersApplied()
-    {
-        return $this->parameters;
-    }
-
-    /**
-     * Return the request filters which will be applied.
-     * @return array
-     */
-    public function filters()
-    {
-        return $this->request->all();
-    }
-
-    /**
-     * Return the request class
-     * @return Request
-     */
-    public function request()
-    {
-        return $this->request;
-    }
-
-    // Setters
-
-    /**
-     * Merge an array of ignores to the ignore list
      *
-     * @param array $ignores
+     * @param Request $request
+     * @param string|null $prefix
      */
-    public function ignore(array $ignores)
+    public function __construct(Request $request, string $prefix = null)
     {
-        foreach ($ignores as $ignore)
-        {
-            $ignore = $this->clearPrefix($ignore);
+        $this->filters = [];
+        $this->request = $request;
+        $this->setPrefix($prefix);
 
-            if (!$this->shouldBeIgnored($ignore))
-            {
-                $this->ignore[] = $ignore;
-            }
-        }
-    }
-
-    // Status
-
-    /**
-     * Returns true if the filters applied are paginated
-     * @return bool
-     */
-    public function isPaginated()
-    {
-        return $this->paginate > 0;
-    }
-
-    public function getPagination()
-    {
-        return $this->paginate;
+        $this->extractFiltersFromRequest();
     }
 
     /**
-     * Returns true if filters has been applied (apply() function has been called for this instance)
-     * @return mixed
-     */
-    public function isFiltered()
-    {
-        return $this->is_filtered;
-    }
-
-    public function isFilterApplied(string $filter)
-    {
-        if ($this->shouldBeIgnored($filter))
-        {
-            return false;
-        }
-
-        return $this->request->filled($filter);
-    }
-
-    public function getAppliedFilterValue(string $filter)
-    {
-        if ($this->shouldBeIgnored($filter))
-        {
-            return null;
-        }
-
-        return $this->request->input($filter);
-    }
-
-    /**
-     * Apply filters from request array. It returns a Builder in order to apply more scopes
+     * Apply filters
+     *
      * @param Builder $query
      * @return Builder
      */
-    public function apply(Builder $query, Model $context = null)
+    public function apply(Builder $query)
     {
-        $this->context = $context;
+        $this->is_filtered = true;
 
-        $this->class_name = get_class($query->getModel());
+        $this->model = get_class($query->getModel());
         $this->query = $query;
 
-        foreach ($this->filters() as $filter => $value)
-        {
-            if ($this->hasPrefix($filter) && !$this->isOperator($filter) && !$this->shouldBeIgnored($filter))
-            {
-                $this->is_filtered = true;
-                $filter = $this->clearPrefix($filter);
-                $operator = $this->getOperatorFilter($filter);
+        foreach ($this->filters as $filter => $value) {
 
+            if ($this->isOperator($filter)) {
+                continue;
+            }
 
-                $this->debugFilter($filter, $operator, $value);
+            if (method_exists($this, $filter)) {
 
-                if (method_exists($this, $filter)) {
-                    call_user_func_array([$this, $filter], array_filter([$value]));
-                } else {
-                    $this->defaultFilter($filter, $value);
-                }
+                call_user_func_array([$this, $filter], array_filter([$value]));
+
+            } else {
+
+                $this->defaultFilter($filter, $value);
+
             }
         }
 
@@ -228,70 +97,39 @@ class QueryFilter
     }
 
     /**
-     * Return the results collection in case that is no paginated. Returns the paginate results when is paginated
-     * If filters are no applied, it applies the filters and then returns the result
+     * Returns the results as a collection
      *
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder[]|Collection|LengthAwarePaginator|null
+     * @param Builder $query
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder[]|\Illuminate\Database\Eloquent\Collection
      */
-    public function results(Builder $query)
+    public function results(Builder $query = null)
     {
         $this->query = $query;
 
-        foreach ($this->filters() as $filter => $value)
-        {
-            $this->parameters[$filter] = $value;
+        if (!$this->is_filtered) {
+
+            $this->apply($query);
         }
 
-        return $this->getCollection();
-    }
-
-    /**
-     * Return the pagination html buttons when is paginated. This is a wrapper function which use the laravel links()
-     *
-     * @return \Illuminate\Support\HtmlString|null
-     */
-    public function links($view = null, $data = [])
-    {
-        if ($this->isPaginated())
-        {
-            return $this->getCollection()->appends($this->parametersApplied())->links($view, $data);
-        }
-
-        return null;
-    }
-
-    /**
-     * Define the pagination. This is not applied until get() function is called.
-     * @param int $value
-     * @return Builder
-     */
-    public function paginate($value = 0)
-    {
-        if (!is_null($value) && is_int((int)$value)) {
-            $this->paginate = (int)$value;
-        }
-
-        return $this->query;
+        return $this->query->get();
     }
 
     /**
      * Default filter: order_desc will order the results descendingly by the $value attribute.
      * @param $value
      */
-    public function order_desc($value)
+    protected function order_desc($value)
     {
         $this->order_by($value, 'desc');
     }
-
     /**
      * Default filter: order_desc will order the results ascendingly by the $value attribute.
      * @param $value
      */
-    public function order_asc($value)
+    protected function order_asc($value)
     {
         $this->order_by($value, 'asc');
     }
-
     /**
      * Default filter: order_by will order the results by the $attribute in the $direction direction. $direction can
      * be 'asc' or 'desc.
@@ -300,135 +138,43 @@ class QueryFilter
      * @param string $direction
      * @return Builder
      */
-    public function order_by($attribute, $direction = 'asc')
+    protected function order_by($attribute, $direction = 'asc')
     {
-        if (!is_null($attribute) || !is_null($this->class_name))
+        if (!is_null($attribute) || !is_null($this->model))
         {
             /** @var Model $instantiated_class */
-            $instantiated_class = new $this->class_name;
-
+            $instantiated_class = new $this->model;
             if (Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
                 return $this->query->orderBy($attribute, $direction);
             }
         }
-
         return $this->query;
     }
 
     /**
-     * When a filter name is defined in the $this->request array but there isn't a filter function defined then this
-     * function is called. It will filter the results where the database column named $attribute is like $value or the
-     * opposite if $value starts with '!'.
+     * Returns, if exists, the operator defined for this filter
      *
-     * @param $attribute
-     * @param $value
-     * @return Builder
+     * @param string $filter
+     * @param null $default
+     * @return null|string
      */
-    private function defaultFilter($attribute, $value)
+    private function getFilterOperator(string $filter, $default = null)
     {
-        if (!is_null($attribute) || !is_null($this->class_name))
-        {
-            /** @var Model $instantiated_class */
-            $instantiated_class = new $this->class_name;
+        $operator = null;
 
-            if (\Illuminate\Support\Facades\Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
+        if (isset($this->filters[$filter . '-op'])) {
 
-                if (array_key_exists($attribute, $instantiated_class->getCasts()) &&
-                    $instantiated_class->getCasts()[$attribute] !== 'string')
-                {
-                    $operator = $this->getOperatorFilter($attribute, '=');
-                    $this->query->where($attribute, $operator, $value );
-                }
-                else {
-                    $operator = $this->getOperatorFilter($attribute, 'LIKE');
-                    $this->query->where($attribute, $operator, '%' . $value . '%');
-                }
-            }
+            $operator = $this->filters[$filter . '-op'];
+
         }
 
-        return $this->query;
-    }
+        if (is_null($operator)) {
 
-    /**
-     * To avoid calling database to get the results when we need them, it is cached in memory.
-     *
-     * @return Collection|LengthAwarePaginator|null
-     */
-    private function getCollection()
-    {
-        if (is_null($this->collection))
-        {
-            if ($this->isPaginated())
-            {
-                $this->collection = $this->query->paginate($this->paginate);
-            }
-            else {
-                $this->collection = $this->query->get();
-            }
-        }
-
-        return $this->collection;
-    }
-
-    /**
-     * Check if the filter starts with the configured prefix (default: qf)
-     * @param string $filter
-     * @return false|int
-     */
-    private function hasPrefix(string $filter)
-    {
-        return preg_match("/^" . $this->prefix . "-[\s\S]*$/", $filter);
-    }
-
-    /**
-     * Remove the prefix (default: qf) for the filter given
-     * @param string $filter
-     * @return null|string|string[]
-     */
-    private function clearPrefix(string $filter)
-    {
-        return preg_replace("/^" . $this->prefix . "-/", "", $filter);
-    }
-
-    /**
-     * Add the prefix to a filter name
-     *
-     * @param string $filter
-     * @return string
-     */
-    public function addPrefix(string $filter)
-    {
-        return $this->prefix . '-' . $filter;
-    }
-
-    /**
-     * Check if the filter is an operator (start with the prefix and finish with -op)
-     * @param string $filter
-     * @return false|int
-     */
-    private function isOperator(string $filter)
-    {
-        return preg_match("/^" . $this->prefix . "-[\s\S]*-op$/", $filter);
-    }
-
-
-    /**
-     * Get the operator, if exists, for the filter given (either with prefix or not)
-     * @param string $filter
-     * @return string
-     */
-    private function getOperatorFilter(string $filter, $default = null)
-    {
-        $filter = $this->clearPrefix($filter);
-
-        $operator_string = $this->request->input($this->prefix . '-' . $filter . '-op');
-
-        if (is_null($operator_string))
-        {
             return $default;
+
         }
 
-        $operator = $this->operatorStringToSQLOperator($operator_string);
+        $operator = $this->operatorStringToSQLOperator($operator);
 
         return is_null($operator) ? $default : $operator;
     }
@@ -440,8 +186,8 @@ class QueryFilter
      */
     private function operatorStringToSQLOperator($operator)
     {
-        switch ($operator)
-        {
+        switch ($operator) {
+
             case "eq":
                 return '=';
             case 'neq':
@@ -456,53 +202,99 @@ class QueryFilter
                 return '<=';
             default:
                 return null;
+
         }
     }
 
     /**
-     * Show debug filter message in LaravelDebugbar
-     * @param $filter
-     * @param $operator
-     * @param $value
-     * @param bool $applied
-     */
-    private function debugFilter($filter, $operator, $value, $applied = true)
-    {
-        if (is_array($value))
-        {
-            $value = 'array()';
-        }
-
-        if (!is_null($this->debugBar))
-        {
-            if ($applied)
-            {
-                $method = method_exists($this, $filter) ? $filter . '()' : 'defaultFilter()';
-                $this->debugBar->addMessage("Filter applied: `" . $filter . "`\tOperator: `" . $operator . "`\t Value: `" . $value . "`\t Method: `" . $method . "`", 'info');
-            }
-            else {
-                $this->debugBar->addMessage("Filter ignored: `" . $filter . "`", 'warning');
-            }
-        }
-    }
-
-    /**
-     * Returns whether a filter should be ignored
+     * Set a prefix
      *
-     * @param $filter
+     * @param null $prefix
+     */
+    private function setPrefix($prefix = null)
+    {
+        if (is_null($prefix)) {
+
+            $prefix = "";
+
+        }
+
+        $this->prefix = $prefix;
+        $this->extractFiltersFromRequest();
+    }
+
+    /**
+     * Extract the filters which has the prefix defined from the request
+     */
+    private function extractFiltersFromRequest()
+    {
+        $filters = $this->request->all();
+
+        foreach ($filters as $filter => $value) {
+
+            if ($this->hasPrefix($filter, $this->prefix)) {
+
+                $this->filters[$this->removePrefix($filter, $this->prefix)] = $value;
+
+            }
+        }
+    }
+
+    /**
+     * Check whether a filter name starts with a prefix
+     * @param string $filter
+     * @param string $prefix
      * @return bool
      */
-    private function shouldBeIgnored($filter)
+    private function hasPrefix(string $filter, string $prefix)
     {
-        $filter = $this->clearPrefix($filter);
-
-        $found = in_array($filter, $this->ignore);
-
-        if ($found)
-        {
-            $this->debugFilter($filter, null, null, false);
-        }
-
-        return $found;
+        return substr($filter, 0, strlen($prefix)) === $prefix;
     }
+
+    /**
+     * Remove the prefix from the filter name
+     * @param string $filter
+     * @param string $prefix
+     * @return null|string|string[]
+     */
+    private function removePrefix(string $filter, string $prefix)
+    {
+        return preg_replace("/^" . $prefix . "-/", "", $filter);
+    }
+
+    private function defaultFilter($attribute, $value)
+    {
+        if (!is_null($attribute) || !is_null($this->model)) {
+            /** @var Model $instantiated_class */
+            $instantiated_class = new $this->model;
+            if (Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
+
+                if (array_key_exists($attribute, $instantiated_class->getCasts()) &&
+                    $instantiated_class->getCasts()[$attribute] !== 'string') {
+
+                    $operator = $this->getFilterOperator($attribute, '=');
+                    $this->query->where($attribute, $operator, $value);
+
+                } else {
+
+                    $operator = $this->getFilterOperator($attribute, 'LIKE');
+                    $this->query->where($attribute, $operator, '%' . $value . '%');
+
+                }
+
+            }
+        }
+        return $this->query;
+    }
+
+    /**
+     * Check if the filter is an operator (start with the prefix and finish with -op)
+     * @param string $filter
+     * @return false|int
+     */
+    private function isOperator(string $filter)
+    {
+        return preg_match("/^" . $this->prefix . "-[\s\S]*-op$/", $filter);
+    }
+
 }
