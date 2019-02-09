@@ -4,7 +4,7 @@ namespace Kodilab\LaravelFilters;
 
 use Illuminate\Support\ServiceProvider;
 
-class QueryFilterProvider extends ServiceProvider
+class LaravelFilterProvider extends ServiceProvider
 {
     /**
      * Indicates if loading of the provider is deferred.
