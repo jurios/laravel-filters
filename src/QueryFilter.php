@@ -63,6 +63,15 @@ class QueryFilter
         $this->extractFiltersFromRequest();
     }
 
+    public function __get($name)
+    {
+        if (isset($this->filters[$name])) {
+            return $this->filters[$name];
+        }
+
+        return null;
+    }
+
     /**
      * Apply filters
      *
@@ -83,7 +92,6 @@ class QueryFilter
             }
 
             if (method_exists($this, $filter)) {
-
                 call_user_func_array([$this, $filter], array_filter([$value]));
 
             } else {
