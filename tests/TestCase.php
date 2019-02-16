@@ -42,4 +42,37 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
 
         $app['config']->set('filters', $config);
     }
+
+    protected function assertSQLContainsString(string $string, string $sql)
+    {
+        if (env('DB_CONNECTION') === 'mysql') {
+
+            $string = $this->escapeForMySQL($string);
+            $this->assertStringContainsString($string, $sql);
+
+        } else {
+
+            $this->assertStringContainsString($string, $sql);
+
+        }
+    }
+
+    protected function assertSQLNotContainsString(string $string, string $sql)
+    {
+        if (env('DB_CONNECTION') === 'mysql') {
+
+            $string = $this->escapeForMySQL($string);
+            $this->assertStringNotContainsString($string, $sql);
+
+        } else {
+
+            $this->assertStringNotContainsString($string, $sql);
+
+        }
+    }
+
+    private function escapeForMySQL(string $string)
+    {
+        return str_replace("\"", "`", $string);
+    }
 }

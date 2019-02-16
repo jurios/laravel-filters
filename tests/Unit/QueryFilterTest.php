@@ -48,7 +48,7 @@ class QueryFilterTest extends TestCase
 
         $filters = new QueryFilter($this->request);
 
-        $this->assertStringContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
     }
 
     public function test_default_filter_not_applied_if_the_field_does_not_exist()
@@ -59,7 +59,7 @@ class QueryFilterTest extends TestCase
 
         $filters = new QueryFilter($this->request);
 
-        $this->assertStringNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+        $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
     }
 
     public function test_order_by()
@@ -71,7 +71,7 @@ class QueryFilterTest extends TestCase
 
         $filters = new QueryFilter($this->request);
 
-        $this->assertStringContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
+        $this->assertSQLContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
     }
 
     public function test_order_by_only_works_for_existing_fields()
@@ -83,6 +83,6 @@ class QueryFilterTest extends TestCase
 
         $filters = new QueryFilter($this->request);
 
-        $this->assertStringNotContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
+        $this->assertSQLNotContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
     }
 }
