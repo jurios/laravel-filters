@@ -2,10 +2,6 @@
 
 namespace Kodilab\LaravelFilters\Tests;
 
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-use Kodilab\LaravelI18n\Models\Locale;
-
 abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
     protected $test_files_path;
