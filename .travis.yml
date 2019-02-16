@@ -1,0 +1,28 @@
+language: php
+sudo: false
+
+branches:
+  only:
+    - master
+
+before_install:
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS testing;'
+
+before_script:
+  - psql -c 'create database testing;' -U postgres
+
+install:
+  - composer install
+
+services:
+  - mysql
+  - postgresql
+
+matrix:
+  include:
+    - php: 7.1
+      env: DB_USERNAME=travis DB_PASSWORD="" DB_DATABASE="testing" DB_CONNECTION=mysql
+    - php: 7.1
+      env: DB_USERNAME=travis DB_PASSWORD="" DB_CONNECTION=pgsql DB_PORT=5432 DB_DATABASE="testing"
+    - php: 7.1
+      env: DB_DATABASE=":memory:" DB_CONNECTION=sqlite
