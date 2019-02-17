@@ -2,8 +2,10 @@
 
 namespace Kodilab\LaravelFilters\Tests\Unit;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Kodilab\LaravelFilters\QueryFilter;
 use Kodilab\LaravelFilters\Tests\Resources\TestModels\TestModel;
 use Kodilab\LaravelFilters\Tests\TestCase;
@@ -84,5 +86,24 @@ class QueryFilterTest extends TestCase
         $filters = new QueryFilter($this->request);
 
         $this->assertSQLNotContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
+    }
+
+    public function test_query_returns_LengthAwarePaginator_when_there_is_pagination()
+    {
+        $filter_name = 'order_desc';
+        $filter_value = $this->faker->unique()->word;
+
+        $this->request->merge([$filter_name => $filter_value]);
+
+        $filters = new QueryFilter($this->request);
+
+        $this->assertEquals(Collection::class, get_class(TestModel::filters($filters)->get()));
+
+        $paginate = $this->faker->numberBetween(1, 50);
+        $this->request->merge(['paginate' => $paginate]);
+        $filters = new QueryFilter($this->request);
+
+        $this->assertEquals(LengthAwarePaginator::class, get_class(TestModel::filters($filters)->get()));
+        $this->assertEquals($paginate, TestModel::filters($filters)->get()->perPage());
     }
 }

@@ -30,6 +30,12 @@ class QueryFilter
     protected $filters;
 
     /**
+     * Indicates the pagination. If it is 0, no pagination will be applied
+     * @var int $pagination
+     */
+    protected $pagination;
+
+    /**
      * Model which are being filtered
      *
      * @var Model
@@ -59,10 +65,16 @@ class QueryFilter
         $this->filters = [];
         $this->request = $request;
         $this->setPrefix($prefix);
+        $this->pagination = 0;
 
         $this->extractFiltersFromRequest();
     }
 
+    /**
+     * If the attribute does not exist, then return the filter which name is $name if it exists
+     * @param $name
+     * @return mixed|null
+     */
     public function __get($name)
     {
         if (isset($this->filters[$name])) {
@@ -76,7 +88,7 @@ class QueryFilter
      * Apply filters
      *
      * @param Builder $query
-     * @return Builder
+     * @return FilterBuilder
      */
     public function apply(Builder $query)
     {
@@ -101,25 +113,16 @@ class QueryFilter
             }
         }
 
-        return $this->query;
+        return $this->getFilterBuilder();
     }
 
     /**
-     * Returns the results as a collection
-     *
-     * @param Builder $query
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|Builder[]|\Illuminate\Database\Eloquent\Collection
+     * Returns the pagination
+     * @return int
      */
-    public function results(Builder $query = null)
+    public function getPagination()
     {
-        $this->query = $query;
-
-        if (!$this->is_filtered) {
-
-            $this->apply($query);
-        }
-
-        return $this->query->get();
+        return $this->pagination;
     }
 
     /**
@@ -130,6 +133,7 @@ class QueryFilter
     {
         $this->order_by($value, 'desc');
     }
+
     /**
      * Default filter: order_desc will order the results ascendingly by the $value attribute.
      * @param $value
@@ -138,6 +142,7 @@ class QueryFilter
     {
         $this->order_by($value, 'asc');
     }
+
     /**
      * Default filter: order_by will order the results by the $attribute in the $direction direction. $direction can
      * be 'asc' or 'desc.
@@ -157,6 +162,46 @@ class QueryFilter
             }
         }
         return $this->query;
+    }
+
+    /**
+     * Default filter. If there is not a specific filter method, this filter method is fired
+     * @param $attribute
+     * @param $value
+     * @return Builder
+     */
+    protected function defaultFilter($attribute, $value)
+    {
+        if (!is_null($attribute) || !is_null($this->model)) {
+            /** @var Model $instantiated_class */
+            $instantiated_class = new $this->model;
+            if (Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
+
+                if (array_key_exists($attribute, $instantiated_class->getCasts()) &&
+                    $instantiated_class->getCasts()[$attribute] !== 'string') {
+
+                    $operator = $this->getFilterOperator($attribute, '=');
+                    $this->query->where($attribute, $operator, $value);
+
+                } else {
+
+                    $operator = $this->getFilterOperator($attribute, 'LIKE');
+                    $this->query->where($attribute, $operator, '%' . $value . '%');
+
+                }
+
+            }
+        }
+        return $this->query;
+    }
+
+    /**
+     * Default filter for pagination
+     * @param $value
+     */
+    protected function paginate($value)
+    {
+        $this->pagination = $value;
     }
 
     /**
@@ -270,31 +315,6 @@ class QueryFilter
         return preg_replace("/^" . $prefix . "-/", "", $filter);
     }
 
-    private function defaultFilter($attribute, $value)
-    {
-        if (!is_null($attribute) || !is_null($this->model)) {
-            /** @var Model $instantiated_class */
-            $instantiated_class = new $this->model;
-            if (Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
-
-                if (array_key_exists($attribute, $instantiated_class->getCasts()) &&
-                    $instantiated_class->getCasts()[$attribute] !== 'string') {
-
-                    $operator = $this->getFilterOperator($attribute, '=');
-                    $this->query->where($attribute, $operator, $value);
-
-                } else {
-
-                    $operator = $this->getFilterOperator($attribute, 'LIKE');
-                    $this->query->where($attribute, $operator, '%' . $value . '%');
-
-                }
-
-            }
-        }
-        return $this->query;
-    }
-
     /**
      * Check if the filter is an operator (start with the prefix and finish with -op)
      * @param string $filter
@@ -305,4 +325,13 @@ class QueryFilter
         return preg_match("/^" . $this->prefix . "-[\s\S]*-op$/", $filter);
     }
 
+    /**
+     * Returns the FilterBuilder for the Builder used
+     *
+     * @return FilterBuilder
+     */
+    private function getFilterBuilder()
+    {
+        return new FilterBuilder($this->query, $this);
+    }
 }
