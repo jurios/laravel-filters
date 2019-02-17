@@ -54,9 +54,15 @@ class FilterBuilder
     {
         if(!is_null($this->filters) && $this->filters->getPagination() > 0)
         {
-            return $this->builder->paginate($this->filters->getPagination(), $columns);
+            $results = $this->builder->paginate($this->filters->getPagination(), $columns);
+            $this->filters->setResults($results);
+
+            return $results;
         }
 
-        return $this->builder->get($columns);
+        $results = $this->builder->get($columns);
+        $this->filters->setResults($results);
+
+        return $results;
     }
 }

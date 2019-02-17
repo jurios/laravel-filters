@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\HtmlString;
 use Kodilab\LaravelFilters\QueryFilter;
 use Kodilab\LaravelFilters\Tests\Resources\TestModels\TestModel;
 use Kodilab\LaravelFilters\Tests\TestCase;
@@ -103,7 +104,48 @@ class QueryFilterTest extends TestCase
         $this->request->merge(['paginate' => $paginate]);
         $filters = new QueryFilter($this->request);
 
+
         $this->assertEquals(LengthAwarePaginator::class, get_class(TestModel::filters($filters)->get()));
         $this->assertEquals($paginate, TestModel::filters($filters)->get()->perPage());
+    }
+
+    public function test_no_prefixed_filters_are_ignored()
+    {
+        $filter_name = 'id';
+        $filter_value = $this->faker->unique()->numberBetween();
+
+        $this->request->merge([$filter_name => $filter_value]);
+
+        $filters = new QueryFilter($this->request, 'prefix');
+
+        $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+
+        $filter_name = 'prefixid';
+        $this->request->merge([$filter_name => $filter_value]);
+
+        $filters = new QueryFilter($this->request, 'prefix');
+
+        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+
+    }
+
+    public function test_links_are_returned_when_there_is_pagination()
+    {
+        $filters = new QueryFilter($this->request);
+
+        TestModel::filters($filters)->get();
+
+        $this->assertNull($filters->links());
+
+        $paginate = $this->faker->numberBetween(1, 50);
+        $this->request->merge(['paginate' => $paginate]);
+
+        $filters = new QueryFilter($this->request);
+
+        TestModel::filters($filters)->get();
+
+        $this->assertNotNull($filters->links());
+        $this->assertEquals(HtmlString::class, get_class($filters->links()));
+
     }
 }

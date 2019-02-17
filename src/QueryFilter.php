@@ -4,8 +4,10 @@ namespace Kodilab\LaravelFilters;
 
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Schema;
 
 class QueryFilter
@@ -34,6 +36,14 @@ class QueryFilter
      * @var int $pagination
      */
     protected $pagination;
+
+    /**
+     * The results after fire get() method. This is only used in order to render html button links in
+     * case it is paginating. In other cases, $results is not used.
+     *
+     * @var Collection | LengthAwarePaginator $results
+     */
+    protected $results;
 
     /**
      * Model which are being filtered
@@ -66,6 +76,7 @@ class QueryFilter
         $this->request = $request;
         $this->setPrefix($prefix);
         $this->pagination = 0;
+        $this->results = null;
 
         $this->extractFiltersFromRequest();
     }
@@ -123,6 +134,32 @@ class QueryFilter
     public function getPagination()
     {
         return $this->pagination;
+    }
+
+    /**
+     * Set the results
+     *
+     * @param $results
+     */
+    public function setResults($results)
+    {
+        $this->results = $results;
+    }
+
+    /**
+     * Return the pagination html buttons when is paginated. This is a wrapper function which use the laravel links()
+     *
+     * @param null $view
+     * @param array $data
+     * @return \Illuminate\Support\HtmlString|null
+     */
+    public function links($view = null, $data = [])
+    {
+        if ($this->pagination > 0)
+        {
+            return $this->results->appends($this->filtersPrefixed())->links($view, $data);
+        }
+        return null;
     }
 
     /**
@@ -286,11 +323,26 @@ class QueryFilter
         foreach ($filters as $filter => $value) {
 
             if ($this->hasPrefix($filter, $this->prefix)) {
-
                 $this->filters[$this->removePrefix($filter, $this->prefix)] = $value;
-
             }
         }
+    }
+
+    /**
+     * Return the filters array with prefix
+     *
+     * @return array
+     */
+    private function filtersPrefixed()
+    {
+        $prefixedFilters = [];
+
+        foreach ($this->filters as $filter => $value)
+        {
+            $prefixedFilters[$this->prefix . $filter] = $value;
+        }
+
+        return $prefixedFilters;
     }
 
     /**
@@ -312,7 +364,7 @@ class QueryFilter
      */
     private function removePrefix(string $filter, string $prefix)
     {
-        return preg_replace("/^" . $prefix . "-/", "", $filter);
+        return preg_replace("/^" . $prefix . "/", "", $filter);
     }
 
     /**
