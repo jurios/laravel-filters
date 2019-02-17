@@ -58,13 +58,6 @@ class QueryFilter
     protected $query;
 
     /**
-     * Returns whether the filters has been applied
-     *
-     * @var bool $is_filtered
-     */
-    protected $is_filtered;
-
-    /**
      * QueryFilter constructor.
      *
      * @param Request $request
@@ -103,8 +96,6 @@ class QueryFilter
      */
     public function apply(Builder $query)
     {
-        $this->is_filtered = true;
-
         $this->model = get_class($query->getModel());
         $this->query = $query;
 
