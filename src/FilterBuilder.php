@@ -52,9 +52,9 @@ class FilterBuilder
 
     public function get($columns = ['*'])
     {
-        if(!is_null($this->filters) && $this->filters->getPagination() > 0)
+        if(!is_null($this->filters) && $this->filters->pagination > 0)
         {
-            $results = $this->builder->paginate($this->filters->getPagination(), $columns);
+            $results = $this->builder->paginate($this->filters->pagination, $columns);
             $this->filters->setResults($results);
 
             return $results;

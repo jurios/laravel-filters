@@ -35,7 +35,7 @@ class QueryFilters
      * Indicates the pagination. If it is 0, no pagination will be applied
      * @var int $pagination
      */
-    protected $pagination;
+    public $pagination;
 
     /**
      * The results after fire get() method. This is only used in order to render html button links in
@@ -109,22 +109,12 @@ class QueryFilters
                 call_user_func_array([$this, $filter], array_filter([$value]));
 
             } else {
-
                 $this->defaultFilter($filter, $value);
 
             }
         }
 
         return $this->getFilterBuilder();
-    }
-
-    /**
-     * Returns the pagination
-     * @return int
-     */
-    public function getPagination()
-    {
-        return $this->pagination;
     }
 
     /**
