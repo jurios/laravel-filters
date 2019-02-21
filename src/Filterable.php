@@ -11,10 +11,10 @@ trait Filterable
      * Apply filters $filters and return a Builder $query.
      *
      * @param Builder $query
-     * @param QueryFilter $filters
+     * @param QueryFilters $filters
      * @return FilterBuilder
      */
-    public function scopeFilters(Builder $query, QueryFilter $filters)
+    public function scopeFilters(Builder $query, QueryFilters $filters)
     {
         return $filters->apply($query);
     }

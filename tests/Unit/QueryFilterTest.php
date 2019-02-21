@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\HtmlString;
-use Kodilab\LaravelFilters\QueryFilter;
+use Kodilab\LaravelFilters\QueryFilters;
 use Kodilab\LaravelFilters\Tests\Resources\TestModels\TestModel;
 use Kodilab\LaravelFilters\Tests\TestCase;
 
@@ -30,12 +30,12 @@ class QueryFilterTest extends TestCase
         $filter_name = $this->faker->unique()->word;
         $filter_value = $this->faker->unique()->numberBetween();
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertNull($filters->$filter_name);
 
         $this->request->merge([$filter_name => $filter_value]);
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertEquals($filters->$filter_name, $filter_value);
 
@@ -49,7 +49,7 @@ class QueryFilterTest extends TestCase
         $filter_value = $this->faker->unique()->numberBetween();
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
     }
@@ -60,7 +60,7 @@ class QueryFilterTest extends TestCase
         $filter_value = $this->faker->unique()->numberBetween();
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
     }
@@ -72,7 +72,7 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertSQLContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
     }
@@ -84,7 +84,7 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertSQLNotContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
     }
@@ -96,13 +96,13 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         $this->assertEquals(Collection::class, get_class(TestModel::filters($filters)->get()));
 
         $paginate = $this->faker->numberBetween(1, 50);
         $this->request->merge(['paginate' => $paginate]);
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
 
         $this->assertEquals(LengthAwarePaginator::class, get_class(TestModel::filters($filters)->get()));
@@ -116,14 +116,14 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request, 'prefix');
+        $filters = new QueryFilters($this->request, 'prefix');
 
         $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
 
         $filter_name = 'prefixid';
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilter($this->request, 'prefix');
+        $filters = new QueryFilters($this->request, 'prefix');
 
         $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
 
@@ -131,7 +131,7 @@ class QueryFilterTest extends TestCase
 
     public function test_links_are_returned_when_there_is_pagination()
     {
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         TestModel::filters($filters)->get();
 
@@ -140,7 +140,7 @@ class QueryFilterTest extends TestCase
         $paginate = $this->faker->numberBetween(1, 50);
         $this->request->merge(['paginate' => $paginate]);
 
-        $filters = new QueryFilter($this->request);
+        $filters = new QueryFilters($this->request);
 
         TestModel::filters($filters)->get();
 

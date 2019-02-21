@@ -6,13 +6,13 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FilterBuilder
 {
-    /** @var QueryFilter $filters */
+    /** @var QueryFilters $filters */
     protected $filters;
 
     /** @var Builder $builder */
     protected $builder;
 
-    public function __construct(Builder $builder, QueryFilter $filters)
+    public function __construct(Builder $builder, QueryFilters $filters)
     {
         $this->builder = $builder;
         $this->filters = $filters;
