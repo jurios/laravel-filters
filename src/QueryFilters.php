@@ -310,7 +310,7 @@ class QueryFilters
     }
 
     /**
-     * Return the filters array with prefix
+     * Returns the filters array with prefix
      *
      * @return array
      */
@@ -320,10 +320,21 @@ class QueryFilters
 
         foreach ($this->filters as $filter => $value)
         {
-            $prefixedFilters[$this->prefix . $filter] = $value;
+            $prefixedFilters[$this->filterWithPrefix($filter)] = $value;
         }
 
         return $prefixedFilters;
+    }
+
+    /**
+     * Returns the filter with the defined prefix
+     *
+     * @param string $filter
+     * @return string
+     */
+    private function filterWithPrefix(string $filter)
+    {
+        return $this->prefix . $filter;
     }
 
     /**
