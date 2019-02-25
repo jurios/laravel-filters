@@ -4,67 +4,16 @@
 I'm not an English speaker thus you could find mistakes and typos in this readme (and in code comments). I really sorry about that and I'll try to fix them as soon as I spot them.
 
 ## What is this?
-**Laravel-filters** is a solution that I use in my projects to deal with filters
-when I'm requesting data from the database. This project is based on a Laracasts's
-tutorial about filters.
+**Laravel-filters** allows you to define and apply filters into a Query Builder depending on the query
+parameters of the request.
 
-Some of the features of this package are these:
-
-* Filtering based on the URL variables defined on the request.
-```
-/this/is/the/url?qf-var1=a&qf-var2=b
-
-// This will apply filters called var1 with value a and var2 with value b
-```
-
-* If desired, automatically filter model's attributes agnostically.
-```
-/this/is/the/url?qf-var1=a&qf-var2=b
-
-// If desired, this will look for the models whose attribute var1 == a y var2 == b
-// If var1 doesn't exists, it ignores this filter thus you don't need to check before apply
-```
-
-* You can specific the comparision that it will be executed
-```
-/this/is/the/url?qf-var1=1&qf-var1-op=lte
-
-// This will look for entities whose attribute var1 <= 1
-// If var1 doesn't exists, it ignores this filter
-```
-
-* Designed to be used as a `laravel's scope` thus you can keep adding statements to the query after (or before) applying filters
-```
-Model::where('var1', 'a')->filters($filters)->where('var', 'b')->get();
-```
-
-* Convention over configuration. You can overwrite how a filter is applied
-
-* Simplified and automatically pagination management
-```
-/this/is/the/url?qf-var1=a&qf-paginate=10
-//This will paginate each 10 records
-
-$filters->links() // Then you can call for pagination buttons using the Laravel pagination system
-```
-
-* Integrated with [laravel-debugbar](https://github.com/barryvdh/laravel-debugbar) if it's present in the project
+This package is based on the QueryFilter class explained in a Laracasts videotutorial.
 
 ## Getting started
 
 ### Installation
-First, you have to add **laravel-filter** to your project using *composer*. First, add this repository to 
-your project's `composer.json`:
-```json
-"repositories": [
-  {
-      "type": "vcs",
-      "url": "https://github.com/jurios/laravel-filters"
-  }
-],
-```
+First, you have to add **laravel-filter** to your project using *composer*.
 
-Then, just require **laravel-filters**:
 ```
 composer require kodilab/laravel-filters
 ```
@@ -76,233 +25,211 @@ php artisan vendor:publish --provider="Kodilab\LaravelFilters\QueryFilterProvide
 
 This will add a filters.php config file into your `configs/` directory. Take it a look to configure the package.
 
-### Inject laravel-filters
+## How start filtering
 
-You can inject **laravel-filters** using the `QueryFilter` class directly in your controller method:
+### Adding the trait
+First, you must add the trait `Filterable` to the models which are going to be filtered.
+```(php)
 
-```php
-public function index(QueryFilter $request)
-    {
-        $events = Event::where('age', > , 18)->filters($request)->get();
-
-        return view('events.index', compact('events', 'request', 'categories'));
-    }
-```
-In this snippet we are filtering the model `Event`. In order to filter this model, you should add the trait `Filterable`
-to the model.
-
-```php
-class Event extends Model
+class Thing extends Model 
 {
-    ...
     use Filterable;
+}
+
+```
+
+### Default filters
+
+That trait will add the scope `filters()` which will be used to apply the filters when we build 
+the QueryBuilder.
+
+```(php)
+// this/is/the/url?field1=a&field2=b
+
+//Controller
+
+public function index(QueryFilters $filters)
+{
+    $things = Thing::where('color', 'blue)->filters($filters)->where('size', 'long')->get();
+
+    return view('some_view', compact(things, filters));
+}
+
+```
+In that case, only the `Things` which are `color=blue`, `size=long`, `field1=a` and `field2=b` will be retrieved.
+
+Look how automatically every parameter name is considered as it was the name of the model attribute.
+In case that name is not a model attribute, then is ignored.
+
+### Filter prefixes
+Not every query parameter in the URL must be a filter. You can use a prefix to ignore the parameters which are not
+filters:
+
+```(php)
+// this/is/the/url?field1=a&qf-field2=b
+
+//Controller
+
+public function index(Request $request)
+{
+    $filters = new QueryFilters($request, 'qf');
+    
+    $things = Thing::where('color', 'blue)->filters($filters)->where('size', 'long')->get();
+
+    return view('some_view', compact(things, filters));
+}
+
+```
+Here, we set `qf` as a prefix of our filters. Therefore, only the `Things` which are `color=blue`, `size=long` 
+and `field2=b` will be retrieved. `field1=a` is ignored because it doesn't start with `qf`.
+
+Notice here that you can define different groups of filters (by using different prefixes) which is useful if you want
+to use multiple QueryBuilders in the same request:
+
+```(php)
+public function index(Request $request)
+{
+    $filtersF = new QueryFilters($request, 'qf');
+    
+    $filtersA = new QueryFilters($request, 'qa');
+    
+    $thingsF = ThingF::where('color', 'blue)->filters($filtersF)->where('size', 'long')->get();
+    
+    $thingsA = ThingA::where('color', 'blue)->filters($filtersA)->where('size', 'long')->get();
+
     ...
 }
 ```
 
-What `Filterable` does is adding two scopes that we use to filter (`filters(QueryFilter) and filterResults(QueryFilter`)
 
-`filters())` scope returns `Illuminate\Database\Eloquent\Builder` thus you can add more statement to your query:
-```php
-$events = Event::->where('age', > 18)->filters($request)->where('age', <, 70)->get();
-```
+### Default filter operations
 
-`filtersResults()` scope returns the `Illuminate\Database\Eloquent\Collection` when no is paginated or 
-`Illuminate\Pagination\LengthAwarePaginator` when a pagination is requested. After calling `filtersResult()`, you can't add
-more statements to the query:
-```php
-$events = Event::->where('age', > 18)->filtersResults($request)->where('age', <, 70); // This will fail
-$events = Event::->where('age', > 18)->filtersResults($request)->get(); // This will fail, too.
+In some cases, you need to filter when a value is `>=, >, <, <=`. In that case, you 
+can define the kind of operation the filter should apply adding the `*-op` method (being `*` the filter name) 
+as a query parameter.
 
-$events = Event::->where('age', > 18)->filtersResults($request); // This works. Call to ->get() is not needed
-```
 
-We implement the `->get()` function internally because **laravel-filters** deal with pagination internally.
+```(php)
+// this/is/the/url?field1=a&field2=b&field2-op=lte
 
-`filtersResults()` scope will apply the filters if they haven't been applied before:
+//Controller
 
-```php
-//Both do the same
-$events = Event::->where('age', > 18)->filters($request)->filtersResults($request);
-$events = Event::->where('age', > 18)->filtersResults($request);
-```
-
-### How filters are applied
-
-Generally, a filter called in the URL is translated to a statement in the `Query Builder`. However, you could create
-more complex filters that do more stuff than that. We'll see how to create or own custom filters later.
-
-If you take a look to `QueryFilter` class which is the base class of the **laravel-filters** you will notice that a filter
-is just a function that add statements to the `Query Builder`. So, for example, the filter `qf-order_desc` will call
-the function `order_desc($value)` being `$value` the value in the URL.
-
-As you can see, to identify the filters in the URL and ignoring the variable which aren't, we use a prefix `qf-` which can
-be configured in the configuration file. This prefix is `destroyed` before apply the filter so `order_desc` is the 
-filter's name and will call the function `order_desc($value)` but is called in the URL by `qf-order_desc`.
-
-By default, there are some filters that they will applied automatically:
-
-#### qf-order_desc=attribute
-URL (example):
-```
-/this/is/the/url?....&qf-order_desc=age
-```
-
-If `age` is an attribute of the model (`age` is a column of the database table), then this statement is applied to the query:
-```php
-->orderBy('age', 'desc')
-```
-
-#### qf-order_asc=attribute
-URL (example):
-```
-/this/is/the/url?....&qf-order_asc=age
-```
-
-If `age` is an attribute of the model (`age` is a column of the database table), then this statement is applied to the query:
-```php
-->orderBy('age', 'asc')
-```
-
-#### qf-paginate=10
-URL(example):
-```
-/this/is/the/url?....&qf-paginate=10
-```
-
-This will apply a pagination of 10 records in the query. This filter is applied in a different way. Please, see the
-pagination section to see the differences.
-
-#### qf-*=value (being * a wildcard)
-URL(example):
-```
-/this/is/the/url?....&qf-slots=10
-```
-
-When doesn't exists a specific function for a filter in the URL, then `QueryFilter` will looks whether the `wildcard` 
-(in this case, `slots`) is a model's column in the database table. If it is, then it will add:
-```php
-->where('slots', 10)
-```
-If it isn't, it will ignored.
-
-##### Ignore a filter
-Sometimes for some reason you want **laravel-filters** ignore a filter. You can do it dynamically adding the filter name 
-(the filter name without prefix) to the ignore list:
-
-```php
-public function index(QueryFilter $request)
+public function index(QueryFilters $filters)
 {
-    $request->ignore(['age', 'name']);
-    
-    $events = Event::where('age', > , 18)->filtersResults($request); //Pagination applied
-    
-}
-```
+    $things = Thing::where('color', 'blue)->filters($filters)->where('size', 'long')->get();
 
-If you are extending the **laravel-filters**'s `QueryFilter` class, you can define your ignore list statically:
+    return view('some_view', compact(things, filters));
+}
+
 ```
-class EventFilter extends QueryFilter
+Here only the `Things` which are `color=blue`, `size=long`, `field1=a` and `field2<=b` will be retrieved.
+
+You can use these filters operations:
+
+<table>
+    <thead>
+        <tr>
+            <th> Operation Query Parameter </th>
+            <th> Symbol equivalence </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> *-op=eq </td>
+            <td> = </td>      
+        </tr>
+        <tr>
+            <td> *-op=neq </td>
+            <td> <> </td>      
+        </tr>
+        <tr>
+            <td> *-op=gt </td>
+            <td> > </td>      
+        </tr>
+        <tr>
+            <td> *-op=gte </td>
+            <td> >= </td>      
+        </tr>
+        <tr>
+            <td> *-op=lt </td>
+            <td> < </td>      
+        </tr>
+        <tr>
+            <td> *-op=lte </td>
+            <td> <= </td>      
+        </tr>
+    </tbody>
+</table>
+
+### Ordering
+You can use `order_asc=field` or `order_desc=field` for ordering the results by a model attribute.
+
+```(php)
+// this/is/the/url?field1=a&field2=b&order_desc=field2
+
+//Controller
+
+public function index(QueryFilters $filters)
 {
-    protected $ignore = ['age', 'name'];
-    ...
+    $things = Thing::where('color', 'blue)->filters($filters)->where('size', 'long')->get();
+
+    return view('some_view', compact(things, filters));
 }
-```
-
-##### Using operators
-Sometimes your filters need an operator which specifics how the filter behaviours. Look the next url:
-```
-/this/is/the/url?....&qf-slots=10
-```
-In this case, this filter will add the next statement to the query:
-```
-->where('slots', 10)
-```
-
-But you can change the `where` statement adding an operator to the filter:
-```
-/this/is/the/url?....&qf-slots=10&sq-slots-op=lte
 
 ```
-```
-->where('slots', '<=', 10)
-```
+In that case, only the `Things` which are `color=blue`, `size=long`, `field1=a` and `field2=b` will be retrieved ordered
+by `field2` descending.
 
-As you can see, a filter's operator has the same prefix and name of the filter. Just we need to add a `-op` at the end.
-The operators can be:
-* `eq` : Equivalent (`where('slots, '=', 10)`)
-* `neq` : Not equivalent (`where('slots, '<>', 10)`)
-* `lt` : Lower than (`where('slots, '<', 10)`)
-* `lte` : Lower than equivalent (`where('slots, '<=', 10)`)
-* `gt` : Greater than (`where('slots, '>', 10)`)
-* `gte` : Greater than equivalent (`where('slots, '>=', 10)`)
- 
-
-### Ok, but I want to create my own filters
-You can create your own class extending the `QueryFilter` class. Then you can create your own filters and
-overwrite the default ones, if you desire. In fact, is recommended creating a `QueryFilter` for every model that 
-is `Filterable` in order to having distinct behaviours for the same filter in different models or 
-creating model-specific filters.
-
-If you want to get the filter's operator in SQL format ('=', '<>', '>', '>=', '<', '<='), then you can call this 
-method in your filter's method:
-```php
-public function new_filter($value)
-{
-    $operator = $this->getOperatorFilter('new_filter', '='); // Returns the operator if exists. 
-                                                            //If not, '=' is returned.
-}
-```
+If you need to order by something more complex than a simple model attribute, then you can overwrite the 
+`order_desc` and `order_asc` filters. Filter overwriting is explained later. 
 
 ### Pagination
-**laravel-filters** considers pagination as a filter too as we can see above. However, pagination has some things to
-consider. Pagination will be applied when we call to `filtersResults` scope thus we can't add more statement to the query.
+Pagination is considered another filter and therefore it has their own filter:
 
-Be careful with this:
-```php
-$events = Event::->where('age', > 18)
-                 ->filters($request)
-                 ->where('age', <, 70); // Pagination hasn't been applied
+```
+```(php)
+// this/is/the/url?field1=a&field2=b&paginate=10
 
-$events = Event::->where('age', > 18)
-                 ->filters($request)
-                 ->where('age', <, 70)
-                 ->filtersResults($request); // Pagination has been applied
-                 
-$events = Event::->where('age', > 18)
-                 ->where('age', <, 70)
-                 ->filtersResults($request); // Pagination has been applied
+//Controller
+
+public function index(QueryFilters $filters)
+{
+    $things = Thing::where('color', 'blue)->filters($filters)->where('size', 'long')->get();
+
+    return view('some_view', compact(things, filters));
+}
+
+```
+In this case, a pagination of 10 records will be applied.
+In your views you can call to `$filters->links()` in order to render the pagination buttons. 
+If no pagination is applied, then anything is rendered. (Notice that calling `$filters->links()` 
+when there isn't pagination won't throw an error)
+
+### Custom filters (Filter overwriting)
+
+You can overwrite any filter explained before or create your own just extending the class `QueryFilters`. In the next example, we want to
+change the behaviour of `field1` filter and create a new fillter called `new_cool_filter`:
+
 ```
 
-When pagination has been applied, our `QueryFilter` class contains really usefull methods to be used in our views:
-
-URL (example):
-```
-/this/is/the/url?....&qf-paginate=10
-```
-
-Controller:
-
-```php
-public function index(QueryFilter $request)
+class NewQueryFilters extends QueryFilters
+{
+    public function field1($value)
     {
-        $events = Event::where('age', > , 18)->filtersResults($request); //Pagination applied
-        
-        $request->isPaginated(); // Returns whether it has been paginated
-        $request->links(); // Will return the html buttons for pagination in case that is paginated
-        
-        return view('events.index,' compact('events, 'request'));
-    
+        $this->query->where('field1', 'something');
     }
-```
-In the view we can:
+    
+    public function new_cool_filter($value)
+    {
+        $this->query->cool_scope();
+    }
+}
 ```
 
-<div>
-  {{ $request->links() }}
-</div>
+Then, in the controller methods where you want to use this new filters just use this class
+```(php)
+public function index(NewQueryFilters $filters)
+{
+    ...
+}
 ```
-This will render the pagination navigation buttons in case that pagination has been applied. If it isn't, then it won't
-render anything. What's more, it will add the parameters of the previous URL to this buttons in order to apply the same filters
-when you change the page's pagination.
-
