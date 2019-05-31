@@ -12,11 +12,17 @@ trait Filterable
      * Apply filters $filters and return a Builder $query.
      *
      * @param Builder $query
-     * @param QueryFilters $filters
-     * @return FilterBuilder
+     * @param string $filter_class
+     * @param array $input
+     * @param string $prefix
+     * @return Builder
      */
-    public function scopeFilters(Builder $query, QueryFilters $filters)
+    public function scopeFilters(Builder $query, string $filter_class, array $input = [], string $prefix = '')
     {
+        /** @var QueryFilters $filters */
+        $filters = new $filter_class($input, $prefix);
+        $filters->setModel(get_class($this));
+
         return $filters->apply($query);
     }
 }

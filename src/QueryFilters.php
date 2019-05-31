@@ -13,13 +13,6 @@ use Illuminate\Support\Facades\Schema;
 class QueryFilters
 {
     /**
-     * The request
-     *
-     * @var Request $request
-     */
-    protected $request;
-
-    /**
      * Prefix used for get the filters from the request
      * @var string $prefix
      */
@@ -32,46 +25,29 @@ class QueryFilters
     protected $filters;
 
     /**
-     * Indicates the pagination. If it is 0, no pagination will be applied
-     * @var int $pagination
-     */
-    public $pagination;
-
-    /**
-     * The results after fire get() method. This is only used in order to render html button links in
-     * case it is paginating. In other cases, $results is not used.
-     *
-     * @var Collection | LengthAwarePaginator $results
-     */
-    protected $results;
-
-    /**
-     * Model which are being filtered
-     *
-     * @var Model
-     */
-    protected $model;
-
-    /**
      * @var Builder
      */
     protected $query;
 
     /**
-     * QueryFilter constructor.
-     *
-     * @param Request $request
-     * @param string|null $prefix
+     * @var string
      */
-    public function __construct(Request $request, string $prefix = null)
-    {
-        $this->filters = [];
-        $this->request = $request;
-        $this->setPrefix($prefix);
-        $this->pagination = 0;
-        $this->results = null;
+    protected $model = Model::class;
 
-        $this->extractFiltersFromRequest();
+    /**
+     * QueryFilters constructor.
+     *
+     * @param array $input
+     * @param string $prefix
+     */
+    public function __construct(array $input = [], string $prefix = '')
+    {
+        $this->filters = $this->getFilters($input, $prefix);
+    }
+
+    public function setModel(string $class)
+    {
+        $this->model = $class;
     }
 
     /**
@@ -92,11 +68,10 @@ class QueryFilters
      * Apply filters
      *
      * @param Builder $query
-     * @return FilterBuilder
+     * @return Builder
      */
     public function apply(Builder $query)
     {
-        $this->model = get_class($query->getModel());
         $this->query = $query;
 
         foreach ($this->filters as $filter => $value) {
@@ -114,33 +89,7 @@ class QueryFilters
             }
         }
 
-        return $this->getFilterBuilder();
-    }
-
-    /**
-     * Set the results
-     *
-     * @param $results
-     */
-    public function setResults($results)
-    {
-        $this->results = $results;
-    }
-
-    /**
-     * Return the pagination html buttons when is paginated. This is a wrapper function which use the laravel links()
-     *
-     * @param null $view
-     * @param array $data
-     * @return \Illuminate\Support\HtmlString|null
-     */
-    public function links($view = null, $data = [])
-    {
-        if ($this->pagination > 0)
-        {
-            return $this->results->appends($this->filtersPrefixed())->links($view, $data);
-        }
-        return null;
+        return $this->query;
     }
 
     /**
@@ -214,15 +163,6 @@ class QueryFilters
     }
 
     /**
-     * Default filter for pagination
-     * @param $value
-     */
-    protected function paginate($value)
-    {
-        $this->pagination = $value;
-    }
-
-    /**
      * Returns, if exists, the operator defined for this filter
      *
      * @param string $filter
@@ -278,63 +218,24 @@ class QueryFilters
     }
 
     /**
-     * Set a prefix
+     * Returns the filters name=>value which has the prefix defined from the input
      *
-     * @param null $prefix
-     */
-    private function setPrefix($prefix = null)
-    {
-        if (is_null($prefix)) {
-
-            $prefix = "";
-
-        }
-
-        $this->prefix = $prefix;
-        $this->extractFiltersFromRequest();
-    }
-
-    /**
-     * Extract the filters which has the prefix defined from the request
-     */
-    private function extractFiltersFromRequest()
-    {
-        $filters = $this->request->all();
-
-        foreach ($filters as $filter => $value) {
-
-            if ($this->hasPrefix($filter, $this->prefix)) {
-                $this->filters[$this->removePrefix($filter, $this->prefix)] = $value;
-            }
-        }
-    }
-
-    /**
-     * Returns the filters array with prefix
-     *
+     * @param array $input
+     * @param string $prefix
      * @return array
      */
-    private function filtersPrefixed()
+    private function getFilters(array $input, string $prefix = '')
     {
-        $prefixedFilters = [];
+        $filters = [];
 
-        foreach ($this->filters as $filter => $value)
-        {
-            $prefixedFilters[$this->filterWithPrefix($filter)] = $value;
+        foreach ($input as $name => $value) {
+
+            if ($this->hasPrefix($name, $prefix)) {
+                $filters[$this->removePrefix($name, $prefix)] = $value;
+            }
         }
 
-        return $prefixedFilters;
-    }
-
-    /**
-     * Returns the filter with the defined prefix
-     *
-     * @param string $filter
-     * @return string
-     */
-    private function filterWithPrefix(string $filter)
-    {
-        return $this->prefix . $filter;
+        return $filters;
     }
 
     /**
@@ -369,13 +270,4 @@ class QueryFilters
         return preg_match("/^" . $this->prefix . "-[\s\S]*-op$/", $filter);
     }
 
-    /**
-     * Returns the FilterBuilder for the Builder used
-     *
-     * @return FilterBuilder
-     */
-    private function getFilterBuilder()
-    {
-        return new FilterBuilder($this->query, $this);
-    }
 }

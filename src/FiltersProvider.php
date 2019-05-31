@@ -20,14 +20,7 @@ class FiltersProvider extends ServiceProvider
      */
     public function boot()
     {
-        $configPath = __DIR__ . '/../config/config.php';
-        $views_path = __DIR__ . '/../views';
-
-        $this->publishes([
-            $configPath => config_path('filters.php'),
-        ]);
-
-        $this->loadViewsFrom($views_path, 'filters');
+        //
     }
 
     /**
@@ -37,10 +30,6 @@ class FiltersProvider extends ServiceProvider
      */
     public function register()
     {
-        $configPath = __DIR__ . '/../config/config.php';
-
-        $this->mergeConfigFrom(
-            $configPath, 'filters'
-        );
+        //
     }
 }

@@ -30,12 +30,12 @@ class QueryFilterTest extends TestCase
         $filter_name = $this->faker->unique()->word;
         $filter_value = $this->faker->unique()->numberBetween();
 
-        $filters = new QueryFilters($this->request);
+        $filters = new QueryFilters($this->request->all());
 
         $this->assertNull($filters->$filter_name);
 
         $this->request->merge([$filter_name => $filter_value]);
-        $filters = new QueryFilters($this->request);
+        $filters = new QueryFilters($this->request->all());
 
         $this->assertEquals($filters->$filter_name, $filter_value);
 
@@ -49,9 +49,7 @@ class QueryFilterTest extends TestCase
         $filter_value = $this->faker->unique()->numberBetween();
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilters($this->request);
-
-        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters(QueryFilters::class, $this->request->all())->toSql());
     }
 
     public function test_default_filter_not_applied_if_the_field_does_not_exist()
@@ -60,9 +58,7 @@ class QueryFilterTest extends TestCase
         $filter_value = $this->faker->unique()->numberBetween();
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilters($this->request);
-
-        $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+        $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters(QueryFilters::class, $this->request->all())->toSql());
     }
 
     public function test_order_by()
@@ -72,9 +68,7 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilters($this->request);
-
-        $this->assertSQLContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
+        $this->assertSQLContainsString("order by \"id\" desc", TestModel::filters(QueryFilters::class, $this->request->all())->toSql());
     }
 
     public function test_order_by_only_works_for_existing_fields()
@@ -84,29 +78,7 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilters($this->request);
-
-        $this->assertSQLNotContainsString("order by \"id\" desc", TestModel::filters($filters)->toSql());
-    }
-
-    public function test_query_returns_LengthAwarePaginator_when_there_is_pagination()
-    {
-        $filter_name = 'order_desc';
-        $filter_value = $this->faker->unique()->word;
-
-        $this->request->merge([$filter_name => $filter_value]);
-
-        $filters = new QueryFilters($this->request);
-
-        $this->assertEquals(Collection::class, get_class(TestModel::filters($filters)->get()));
-
-        $paginate = $this->faker->numberBetween(1, 50);
-        $this->request->merge(['paginate' => $paginate]);
-        $filters = new QueryFilters($this->request);
-
-
-        $this->assertEquals(LengthAwarePaginator::class, get_class(TestModel::filters($filters)->get()));
-        $this->assertEquals($paginate, TestModel::filters($filters)->get()->perPage());
+        $this->assertSQLNotContainsString("order by \"id\" desc", TestModel::filters(QueryFilters::class, $this->request->all())->toSql());
     }
 
     public function test_no_prefixed_filters_are_ignored()
@@ -116,36 +88,24 @@ class QueryFilterTest extends TestCase
 
         $this->request->merge([$filter_name => $filter_value]);
 
-        $filters = new QueryFilters($this->request, 'prefix');
+        $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters(QueryFilters::class, $this->request->all(), $this->faker->name)->toSql());
 
-        $this->assertSQLNotContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+        $prefix = $this->faker->word;
 
-        $filter_name = 'prefixid';
-        $this->request->merge([$filter_name => $filter_value]);
+        $this->request->merge([$prefix . $filter_name => $filter_value]);
 
-        $filters = new QueryFilters($this->request, 'prefix');
-
-        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters($filters)->toSql());
+        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters(QueryFilters::class, $this->request->all(), $prefix)->toSql());
 
     }
 
-    public function test_links_are_returned_when_there_is_pagination()
+    public function test_prefix_equals_as_filter_name_should_be_remove_the_prefix_and_keep_the_filter_name()
     {
-        $filters = new QueryFilters($this->request);
+        $prefix = 'id';
+        $filter_name = $prefix;
+        $filter_value = $this->faker->unique()->numberBetween();
 
-        TestModel::filters($filters)->get();
+        $this->request->merge([$prefix . $filter_name => $filter_value]);
 
-        $this->assertNull($filters->links());
-
-        $paginate = $this->faker->numberBetween(1, 50);
-        $this->request->merge(['paginate' => $paginate]);
-
-        $filters = new QueryFilters($this->request);
-
-        TestModel::filters($filters)->get();
-
-        $this->assertNotNull($filters->links());
-        $this->assertEquals(HtmlString::class, get_class($filters->links()));
-
+        $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters(QueryFilters::class, $this->request->all(), $prefix)->toSql());
     }
 }
