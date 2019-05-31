@@ -1,9 +1,10 @@
 <?php
 
-namespace Kodilab\LaravelFilters;
+namespace Kodilab\LaravelFilters\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use Kodilab\LaravelFilters\FilterBuilder;
+use Kodilab\LaravelFilters\QueryFilters;
 
 trait Filterable
 {

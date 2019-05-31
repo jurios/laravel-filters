@@ -3,7 +3,7 @@
 namespace Kodilab\LaravelFilters\Tests\Resources\TestModels;
 
 use Illuminate\Database\Eloquent\Model;
-use Kodilab\LaravelFilters\Filterable;
+use Kodilab\LaravelFilters\Traits\Filterable;
 
 class TestModel extends Model
 {
