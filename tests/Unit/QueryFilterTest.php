@@ -31,12 +31,12 @@ class QueryFilterTest extends TestCase
         $filter_value = $this->faker->unique()->numberBetween();
 
         $filters = new QueryFilters();
-        $filters->apply(TestModel::orderBy('id'), []);
+        $filters->apply(TestModel::query(), []);
         $this->assertNull($filters->$filter_name);
 
         $this->request->merge([$filter_name => $filter_value]);
         $filters = new QueryFilters();
-        $filters->apply(TestModel::orderBy('id'), $this->request->all());
+        $filters->apply(TestModel::query(), $this->request->all());
 
         $this->assertEquals($filters->$filter_name, $filter_value);
 
@@ -114,8 +114,33 @@ class QueryFilterTest extends TestCase
     {
         $queryFilters = new QueryFilters();
 
-        $queryFilters->apply(TestModel::orderBy('id'), []);
+        $queryFilters->apply(TestModel::query(), []);
 
         $this->assertEquals(TestModel::class, $queryFilters->getModel());
     }
+
+    public function test_operator_changes_the_query()
+    {
+        $filter = 'id';
+        $filter_value = $this->faker->unique()->numberBetween();
+        $filter_operator = 'lt';
+
+        $this->request->merge([$filter => $filter_value, $filter . '-op' => $filter_operator]);
+
+        $this->assertSQLContainsString("where \"id\" < ?", TestModel::filters(QueryFilters::class, $this->request->all())->toSql());
+    }
+
+    public function test_operator_changes_the_query_with_prefix()
+    {
+        $prefix = $this->faker->word . '-';
+        $filter = 'id';
+        $filter_value = $this->faker->unique()->numberBetween();
+        $filter_operator = 'lt';
+
+        $this->request->merge([$prefix . $filter => $filter_value, $prefix  . $filter . '-op' => $filter_operator]);
+
+        $this->assertSQLContainsString("where \"id\" < ?", TestModel::filters(QueryFilters::class, $this->request->all(), $prefix)->toSql());
+    }
+
+
 }

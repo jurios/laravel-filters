@@ -57,7 +57,7 @@ signature (signature as scope):
 * **input**: An associative array of filter => value
 * **prefix**: Sometimes, specially when you use directly the `Request` array (`$request->all()`), you don't want to use
                 all items of that array. You can identify the items you want to use with a prefix. For example, 
-                if you define `qf` as a prefix, `qf-name` will be take from the array as a filter 
+                if you define `qf-` as a prefix, `qf-name` will be take from the array as a filter
                 (and will filter by the `name` column) and `color` will be ignored as it doesn't start with `qf-`.
                 
 ### Default filter behaviour

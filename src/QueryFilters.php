@@ -266,7 +266,7 @@ class QueryFilters
      */
     private function isOperator(string $filter)
     {
-        return preg_match("/^" . $this->prefix . "-[\s\S]*-op$/", $filter);
+        return preg_match("/^" . $this->prefix . "[\s\S]*-op$/", $filter);
     }
 
 }
