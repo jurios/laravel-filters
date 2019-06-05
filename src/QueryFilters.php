@@ -37,17 +37,15 @@ class QueryFilters
     /**
      * QueryFilters constructor.
      *
-     * @param array $input
-     * @param string $prefix
      */
-    public function __construct(array $input = [], string $prefix = '')
+    public function __construct()
     {
-        $this->filters = $this->getFilters($input, $prefix);
+        //
     }
 
-    public function setModel(string $class)
+    public function getModel()
     {
-        $this->model = $class;
+        return $this->model;
     }
 
     /**
@@ -68,11 +66,15 @@ class QueryFilters
      * Apply filters
      *
      * @param Builder $query
+     * @param array $input
+     * @param string $prefix
      * @return Builder
      */
-    public function apply(Builder $query)
+    public function apply(Builder $query, array $input = [], string $prefix = '')
     {
         $this->query = $query;
+        $this->filters = $this->getFilters($input, $prefix);
+        $this->model = get_class($this->query->getModel());
 
         foreach ($this->filters as $filter => $value) {
 

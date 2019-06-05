@@ -30,19 +30,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         ];
     }
 
-    /**
-     * Define environment setup.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return void
-     */
-    protected function getEnvironmentSetUp($app)
-    {
-        $config = include 'config/config.php';
-
-        $app['config']->set('filters', $config);
-    }
-
     protected function assertSQLContainsString(string $string, string $sql)
     {
         if (env('DB_CONNECTION') === 'mysql') {

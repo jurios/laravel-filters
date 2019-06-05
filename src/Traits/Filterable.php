@@ -20,9 +20,8 @@ trait Filterable
     public function scopeFilters(Builder $query, string $filter_class, array $input = [], string $prefix = '')
     {
         /** @var QueryFilters $filters */
-        $filters = new $filter_class($input, $prefix);
-        $filters->setModel(get_class($this));
+        $filters = new $filter_class();
 
-        return $filters->apply($query);
+        return $filters->apply($query, $input, $prefix);
     }
 }

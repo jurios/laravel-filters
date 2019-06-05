@@ -30,12 +30,13 @@ class QueryFilterTest extends TestCase
         $filter_name = $this->faker->unique()->word;
         $filter_value = $this->faker->unique()->numberBetween();
 
-        $filters = new QueryFilters($this->request->all());
-
+        $filters = new QueryFilters();
+        $filters->apply(TestModel::orderBy('id'), []);
         $this->assertNull($filters->$filter_name);
 
         $this->request->merge([$filter_name => $filter_value]);
-        $filters = new QueryFilters($this->request->all());
+        $filters = new QueryFilters();
+        $filters->apply(TestModel::orderBy('id'), $this->request->all());
 
         $this->assertEquals($filters->$filter_name, $filter_value);
 
@@ -107,5 +108,14 @@ class QueryFilterTest extends TestCase
         $this->request->merge([$prefix . $filter_name => $filter_value]);
 
         $this->assertSQLContainsString("where \"id\" = ?", TestModel::filters(QueryFilters::class, $this->request->all(), $prefix)->toSql());
+    }
+
+    public function test_get_model_returns_the_builder_model()
+    {
+        $queryFilters = new QueryFilters();
+
+        $queryFilters->apply(TestModel::orderBy('id'), []);
+
+        $this->assertEquals(TestModel::class, $queryFilters->getModel());
     }
 }
