@@ -1,7 +1,7 @@
 # Laravel-filters
 
 `Laravel-filters` is a Laravel package for dealing with Eloquent models filtering.
-This project is based on a Laracasts videotutorial (LINK WIP).
+This project is based on a [Laracasts videotutorial](https://laracasts.com/).
 
 With `laravel-filters` each filter you apply will add an statement to the `QueryBuilder` in
 a simple, clean and maintainable way:
