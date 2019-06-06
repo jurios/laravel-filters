@@ -43,7 +43,7 @@ class Car extends Model
 That's all you need. Now you can using filters as it was a `scope` for that model:
 
 ```
-Car::filters(QueryFilter::class, ['filterA' => 'valueFilterA'])->get();
+Car::filters(QueryFilters::class, ['filterA' => 'valueFilterA'])->get();
 ```
 
 ### The `filters()` scope
@@ -52,8 +52,8 @@ signature (signature as scope):
 
 #### filters(string $filter_class, array $input = [], string $prefix = '')
 
-* **filter_class**: The filter class. You can use it the default one (QueryFilter) or extend it for create new filters 
-                    or override them (This step will be explained later). For the moment, it always be `QueryFilter:class`.
+* **filter_class**: The filter class. You can use it the default one (QueryFilters) or extend it for create new filters 
+                    or override them (This step will be explained later). For the moment, it always be `QueryFilters:class`.
 * **input**: An associative array of filter => value
 * **prefix**: Sometimes, specially when you use directly the `Request` array (`$request->all()`), you don't want to use
                 all items of that array. You can identify the items you want to use with a prefix. For example, 
@@ -91,7 +91,7 @@ Let's see a more complex example using the request array in a controller method:
 
 public function index(Request $request)
 {
-    $cars = Cars::filters(QueryFilter:class, $request->all());
+    $cars = Cars::filters(QueryFilters:class, $request->all());
 }
 ```
 In this case, `$cars` will contain all cars which `color != red` (using `neq` operator) which `year > 2000`.
@@ -108,7 +108,7 @@ Taking as example the previous one you can define the ordering like this:
 
 public function index(Request $request)
 {
-    $cars = Cars::filters(QueryFilter:class, $request->all());
+    $cars = Cars::filters(QueryFilters:class, $request->all());
 }
 ``` 
 
@@ -116,15 +116,15 @@ We'll have the cars which color isn't red which year is greater than 2000 and or
 
 ## 2 - Custom filters
 Sometimes you would like create more filters or overriding the existing ones. This is really easy, just extend the
-QueryFilter class and create your own methods.
+QueryFilters class and create your own methods.
 
-Usually, you will have an extended QueryFilter class for each Model as each Model will have its own custom scoped 
+Usually, you will have an extended QueryFilters class for each Model as each Model will have its own custom scoped 
 filters and requirements.
 
-Let's create a extended QueryFilter class for the `Car` model class:
+Let's create a extended QueryFilters class for the `Car` model class:
 
 ```
-class CarFilter extends QueryFilter
+class CarFilters extends QueryFilters
 {
     protected function color($value)
     {
@@ -146,8 +146,8 @@ public function index(Request $request)
     $cars = Cars::filters(CarFilter:class, $request->all());
 }
 ```
-As you can see, we changed the `QueryFilter:class` as argument of the `filters()` to use the new extended 
-class `CarFilter::class`.
+As you can see, we changed the `QueryFilters:class` as argument of the `filters()` to use the new extended 
+class `CarFilters::class`.
 
 In this case, we get the red cars which wheels are red...etc (as we override the filter `color`, the operator is ignored).
 
