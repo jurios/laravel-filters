@@ -128,14 +128,15 @@ class CarFilter extends QueryFilter
 {
     protected function color($value)
     {
-        //Here we are overriding the filter "name". 
+        //Here we are overriding the filter "name".
+        //Just add methods to the $this->query QueryBuilder
         
         $this->query->where('color_wheels', $value)->where('color', $value);
     }
 }
 ```
 
-Now, if we use the same exaple as before:
+Now, if we use the same example as before:
 
 ```
 // GET /cars?color=red&color-op=neq&year=2000&year-op=gt&order_desc=color
@@ -150,4 +151,5 @@ class `CarFilter::class`.
 
 In this case, we get the red cars which wheels are red...etc (as we override the filter `color`, the operator is ignored).
 
-(WIP)
+You can easily access to the operator with `$this->getFilterOperator(string $filter_name, $default = null)` which returns
+the comparison symbol for using directly in the `where` statement (`=, !=, <>, <, <=, >, >=`)
