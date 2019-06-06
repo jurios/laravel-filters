@@ -23,7 +23,7 @@ in order to obtain the desired filter behaviour. Let's step by step.
 Just install the package using `composer` with:
 
 ```
-composer require kodilab/laravel-filters dev-master
+composer require kodilab/laravel-filters ^1.0.0
 ```
 
 Then, for each model you want to filter, add the `Filterable` trait:
