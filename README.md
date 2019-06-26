@@ -1,14 +1,13 @@
 # Laravel-filters
 
-`Laravel-filters` is a Laravel package for dealing with Eloquent models filtering.
+`Laravel-filters` is a Laravel package for dealing with Eloquent models filtering and also Collection filtering.
 This project is based on a [Laracasts videotutorial](https://laracasts.com/).
 
-With `laravel-filters` each filter you apply will add an statement to the `QueryBuilder` in
-a simple, clean and maintainable way.
+With `laravel-filters` you could apply filter in a simple, clean and maintainable way.
 
-By default, your filters will filter the results based on the model's database column names. However, you can override
-an specific filter to change this behaviour or create your custom ones. We'll cover this in the next section. Let's work
-with default filters for now.
+By default, your filters will filter the results based on the data structure (database schema in case Eloquen models). 
+However, you can override an specific filter to change this behaviour or create your custom ones. 
+We'll cover this in the next section. Let's work with default filters for now.
 
 For example, this is how we would call the filters in a `Controller`:
 
@@ -27,7 +26,7 @@ filter called `color` with the value `red` and the "filter"
 
 As we did neither override nor created any custom filters, filters will be applied using a default behaviour:
 
-So, we are requesting cars which `color` column on database contains the `red` value 
+So, in this case, we are requesting car models which `color` column on database contains the `red` value 
 and ordered by `created_at` column in a descendant direction.
 
 As explained before, this is only the default filter behaviour. You can override filters or create new ones
@@ -39,6 +38,8 @@ Just install the package using `composer` with:
 ```
 composer require kodilab/laravel-filters ^1.0.0
 ```
+
+## 2 - Eloquent Model Filters
 
 Then, for each model you want to filter, add the `Filterable` trait:
 
@@ -129,7 +130,10 @@ public function index(Request $request)
 
 We'll have the cars which color isn't red which year is greater than 2000 and ordered by the column `color`.
 
-## 2 - Custom filters
+## 3 - Collection filters
+TODO
+
+## 4 - Custom filters
 Until now, we described the default behaviour. No code is needed. Everything is working under the hood.
 However, sometimes you would like create more filters or overriding the existing ones. 
 This is really easy, just extend the QueryFilters class and create your own methods.
@@ -148,7 +152,10 @@ class CarFilters extends QueryFilters
         //The idea here is adding statements to the $this->query (QueryBuilder containing the results)
         
         //We change the behaviour, now filter color will filter by the car color AND the wheels color. The operator will be ignored
-        $this->query->where('color_wheels', $value)->where('color', $value);
+        $this->results->where('color_wheels', $value)->where('color', $value);
+        
+        //The results MUST be returned
+        return $this->results;
     }
 }
 ```
