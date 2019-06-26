@@ -3,6 +3,7 @@
 namespace Kodilab\LaravelFilters\Filters;
 
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -67,6 +68,24 @@ class CollectionFilters extends Filters
      */
     protected function defaultFilter($attribute, $value)
     {
+        $attribute_exists = false;
+
+        foreach ($this->results as $item) {
+
+            if ($item instanceof Arrayable) {
+                $item = $item->toArray();
+            }
+
+            if (key_exists($attribute, $item)) {
+                $attribute_exists = true;
+                break;
+            }
+        }
+
+        if (!$attribute_exists) {
+            return $this->results;
+        }
+
         $operator = $this->getFilterOperator($attribute, '=');
 
         return $this->results->where($attribute, $operator, $value);
