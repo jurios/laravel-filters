@@ -69,12 +69,16 @@ class Filters
             }
 
             if (method_exists($this, $filter)) {
-                call_user_func_array([$this, $filter], array_filter([$value]));
-
+                $r = call_user_func_array([$this, $filter], array_filter([$value]));
             } else {
-                $this->defaultFilter($filter, $value);
-
+                $r = $this->defaultFilter($filter, $value);
             }
+
+            if (is_null($r)) {
+                throw new \Exception('Filter "' . $filter . '" does not return results');
+            }
+
+            $this->results = $r;
         }
 
         return $this->results;
@@ -82,20 +86,24 @@ class Filters
 
     /**
      * Default filter: order_desc will order the results descendingly by the $value attribute.
+     *
      * @param $value
+     * @return Builder|Collection
      */
     protected function order_desc($value)
     {
-        $this->order_by($value, 'desc');
+        return $this->order_by($value, 'desc');
     }
 
     /**
      * Default filter: order_desc will order the results ascendingly by the $value attribute.
+     *
      * @param $value
+     * @return Builder|Collection
      */
     protected function order_asc($value)
     {
-        $this->order_by($value, 'asc');
+        return $this->order_by($value, 'asc');
     }
 
     /**
@@ -104,10 +112,11 @@ class Filters
      *
      * @param $attribute
      * @param string $direction
+     * @return Builder|Collection
      */
     protected function order_by($attribute, $direction = 'asc')
     {
-        //
+        return $this->results;
     }
 
     /**

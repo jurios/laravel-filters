@@ -40,7 +40,6 @@ class QueryFilters extends Filters
      *
      * @param $attribute
      * @param string $direction
-     * @return Builder
      */
     protected function order_by($attribute, $direction = 'asc')
     {
@@ -59,7 +58,9 @@ class QueryFilters extends Filters
      * Default filter. If there is not a specific filter method, this filter method is fired
      * @param $attribute
      * @param $value
-     * @return Builder
+     * @param $attribute
+     * @param $value
+     * @return Builder|\Illuminate\Support\Collection
      */
     protected function defaultFilter($attribute, $value)
     {
@@ -83,6 +84,7 @@ class QueryFilters extends Filters
 
             }
         }
+
         return $this->results;
     }
 }
