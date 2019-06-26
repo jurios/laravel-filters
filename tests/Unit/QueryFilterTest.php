@@ -2,12 +2,9 @@
 
 namespace Kodilab\LaravelFilters\Tests\Unit;
 
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\HtmlString;
-use Kodilab\LaravelFilters\QueryFilters;
+use Kodilab\LaravelFilters\Filters\QueryFilters;
 use Kodilab\LaravelFilters\Tests\Resources\TestModels\TestModel;
 use Kodilab\LaravelFilters\Tests\TestCase;
 

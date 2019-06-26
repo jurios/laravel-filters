@@ -1,13 +1,13 @@
 <?php
 
-namespace Kodilab\LaravelFilters;
+
+namespace Kodilab\LaravelFilters\Filters;
 
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 
-class QueryFilters
+class Filters
 {
     /**
      * Prefix used for get the filters from the request
@@ -22,14 +22,9 @@ class QueryFilters
     protected $filters;
 
     /**
-     * @var Builder
+     * @var Builder|Collection
      */
-    protected $query;
-
-    /**
-     * @var string
-     */
-    protected $model = Model::class;
+    protected $results;
 
     /**
      * QueryFilters constructor.
@@ -38,11 +33,6 @@ class QueryFilters
     public function __construct()
     {
         //
-    }
-
-    public function getModel()
-    {
-        return $this->model;
     }
 
     /**
@@ -62,16 +52,15 @@ class QueryFilters
     /**
      * Apply filters
      *
-     * @param Builder $query
+     * @param $data
      * @param array $input
      * @param string $prefix
-     * @return Builder
+     * @return Builder|Collection
      */
-    public function apply(Builder $query, array $input = [], string $prefix = '')
+    public function apply($data, array $input = [], string $prefix = '')
     {
-        $this->query = $query;
+        $this->results = $data;
         $this->filters = $this->getFilters($input, $prefix);
-        $this->model = get_class($this->query->getModel());
 
         foreach ($this->filters as $filter => $value) {
 
@@ -80,33 +69,41 @@ class QueryFilters
             }
 
             if (method_exists($this, $filter)) {
-                call_user_func_array([$this, $filter], array_filter([$value]));
-
+                $r = call_user_func_array([$this, $filter], array_filter([$value]));
             } else {
-                $this->defaultFilter($filter, $value);
-
+                $r = $this->defaultFilter($filter, $value);
             }
+
+            if (is_null($r)) {
+                throw new \Exception('Filter "' . $filter . '" does not return results');
+            }
+
+            $this->results = $r;
         }
 
-        return $this->query;
+        return $this->results;
     }
 
     /**
      * Default filter: order_desc will order the results descendingly by the $value attribute.
+     *
      * @param $value
+     * @return Builder|Collection
      */
     protected function order_desc($value)
     {
-        $this->order_by($value, 'desc');
+        return $this->order_by($value, 'desc');
     }
 
     /**
      * Default filter: order_desc will order the results ascendingly by the $value attribute.
+     *
      * @param $value
+     * @return Builder|Collection
      */
     protected function order_asc($value)
     {
-        $this->order_by($value, 'asc');
+        return $this->order_by($value, 'asc');
     }
 
     /**
@@ -115,19 +112,11 @@ class QueryFilters
      *
      * @param $attribute
      * @param string $direction
-     * @return Builder
+     * @return Builder|Collection
      */
     protected function order_by($attribute, $direction = 'asc')
     {
-        if (!is_null($attribute) || !is_null($this->model))
-        {
-            /** @var Model $instantiated_class */
-            $instantiated_class = new $this->model;
-            if (Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
-                return $this->query->orderBy($attribute, $direction);
-            }
-        }
-        return $this->query;
+        return $this->results;
     }
 
     /**
@@ -138,27 +127,7 @@ class QueryFilters
      */
     protected function defaultFilter($attribute, $value)
     {
-        if (!is_null($attribute) || !is_null($this->model)) {
-            /** @var Model $instantiated_class */
-            $instantiated_class = new $this->model;
-            if (Schema::hasColumn($instantiated_class->getTable(), $attribute)) {
-
-                if (array_key_exists($attribute, $instantiated_class->getCasts()) &&
-                    $instantiated_class->getCasts()[$attribute] !== 'string') {
-
-                    $operator = $this->getFilterOperator($attribute, '=');
-                    $this->query->where($attribute, $operator, $value);
-
-                } else {
-
-                    $operator = $this->getFilterOperator($attribute, 'LIKE');
-                    $this->query->where($attribute, $operator, '%' . $value . '%');
-
-                }
-
-            }
-        }
-        return $this->query;
+        //
     }
 
     /**
@@ -168,7 +137,7 @@ class QueryFilters
      * @param null $default
      * @return null|string
      */
-    private function getFilterOperator(string $filter, $default = null)
+    protected function getFilterOperator(string $filter, $default = null)
     {
         $operator = null;
 
@@ -194,7 +163,7 @@ class QueryFilters
      * @param $operator
      * @return string
      */
-    private function operatorStringToSQLOperator($operator)
+    protected function operatorStringToSQLOperator($operator)
     {
         switch ($operator) {
 

@@ -1,14 +1,13 @@
 # Laravel-filters
 
-`Laravel-filters` is a Laravel package for dealing with Eloquent models filtering.
+`Laravel-filters` is a Laravel package for dealing with Eloquent models filtering and also Collection filtering.
 This project is based on a [Laracasts videotutorial](https://laracasts.com/).
 
-With `laravel-filters` each filter you apply will add an statement to the `QueryBuilder` in
-a simple, clean and maintainable way.
+With `laravel-filters` you could apply filter in a simple, clean and maintainable way.
 
-By default, your filters will filter the results based on the model's database column names. However, you can override
-an specific filter to change this behaviour or create your custom ones. We'll cover this in the next section. Let's work
-with default filters for now.
+By default, your filters will filter the results based on the data structure (database schema in case Eloquen models). 
+However, you can override an specific filter to change this behaviour or create your custom ones. 
+We'll cover this in the next section. Let's work with default filters for now.
 
 For example, this is how we would call the filters in a `Controller`:
 
@@ -27,7 +26,7 @@ filter called `color` with the value `red` and the "filter"
 
 As we did neither override nor created any custom filters, filters will be applied using a default behaviour:
 
-So, we are requesting cars which `color` column on database contains the `red` value 
+So, in this case, we are requesting car models which `color` column on database contains the `red` value 
 and ordered by `created_at` column in a descendant direction.
 
 As explained before, this is only the default filter behaviour. You can override filters or create new ones
@@ -39,6 +38,8 @@ Just install the package using `composer` with:
 ```
 composer require kodilab/laravel-filters ^1.0.0
 ```
+
+## 2 - Eloquent Model Filters
 
 Then, for each model you want to filter, add the `Filterable` trait:
 
@@ -129,13 +130,67 @@ public function index(Request $request)
 
 We'll have the cars which color isn't red which year is greater than 2000 and ordered by the column `color`.
 
-## 2 - Custom filters
+## 3 - Collection filters
+In order to use filters in a collection you have two options here:
+
+#### 3.1 - Instance manually the filters
+This is the most conservative way as you don't need to create an extended `Collection`. However you must instance
+the filter by your own every time you want to filter.
+
+This is an example:
+
+```
+public function index(Request $request)
+{
+    //Cars contains a collection
+    $data = new Collection($data);
+    
+    //Instance the filters
+    $filters = new CollectionFilters();
+    
+    //Then apply the filters. Apply() will return the filtered collection
+    $cars = $filters->apply($data, $request->all());
+}
+```
+
+#### 3.2 - Extend the `Collection`
+This way will let you use filters in a very similar way as you use for `Eloquent models`. First you should
+create a Collection class which extends from the `\Illuminate\Support\Collection` and add a method
+called `filters()`. Remember use this new class instead of the original when you want to filter a collection.
+
+```
+class Collection extends \Illuminate\Support\Collection
+{
+    public function filters(string $filter_class, array $input = [], string $prefix = '')
+    {
+        /** @var CollectionFilters $filters */
+        $filters = new $filter_class();
+
+        return $filters->apply($this, $input, $prefix);
+    }
+}
+```
+
+Then you can use `Collection` filters in a similar way as Model filtering:
+
+```
+public function index(Request $request)
+{
+    //Cars contains a collection. Remember use the extended Collection you created before
+    $data = new Collection($data);
+    
+    $cars = $data->filters(CollectionFilters::class, $request->all());
+}
+```
+
+## 4 - Custom filters
 Until now, we described the default behaviour. No code is needed. Everything is working under the hood.
 However, sometimes you would like create more filters or overriding the existing ones. 
-This is really easy, just extend the QueryFilters class and create your own methods.
+This is really easy, just extend the QueryFilters or CollectionFilters class and create your own methods.
 
 Usually, you will have an extended QueryFilters class for each Model as each Model will have its own custom 
-filters and requirements.
+filters and requirements. And you will have an extended CollectionFilters for each Collection you have in your
+project.
 
 Let's create a extended QueryFilters class for the `Car` model class:
 
@@ -148,7 +203,10 @@ class CarFilters extends QueryFilters
         //The idea here is adding statements to the $this->query (QueryBuilder containing the results)
         
         //We change the behaviour, now filter color will filter by the car color AND the wheels color. The operator will be ignored
-        $this->query->where('color_wheels', $value)->where('color', $value);
+        $this->results->where('color_wheels', $value)->where('color', $value);
+        
+        //The results MUST be returned
+        return $this->results;
     }
 }
 ```
@@ -164,7 +222,7 @@ public function index(Request $request)
 }
 ```
 As you can see, we changed the `QueryFilters:class` as argument of the `filters()` to use the new extended 
-class `CarFilters::class`.
+class `CarFilters::class`. 
 
 In this case, we get the red cars which wheels are red too as we are using our custom version of the filter `color` .
 
